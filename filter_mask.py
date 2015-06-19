@@ -1,9 +1,18 @@
 
-__all__ = [ 'Box', 'Circle', 'Ellipse', 'Field', 'Pie', 'Point', 'Polygon', 'Region', 'Sector',
-            'box', 'circle', 'ellipse', 'field', 'pie', 'point', 'polygon', 'region', 'sector' ]
+__all__ = [ 'Annulus', 'Box', 'Circle', 'Ellipse', 'Field', 'Pie', 'Point', 'Polygon', 'Region', 'Rectangle', 'Sector',
+            'annulus', 'box', 'circle', 'ellipse', 'field', 'pie', 'point', 'polygon', 'region', 'rectangle', 'sector' ]
 
 
 import region as _region
+
+try:
+    import chips_contrib.plot_shapes as plt
+except:
+    import warnings
+    warnings.warn("Cannot locate chips_contrib.plot_shape module.  Region plotting will not be available.")
+    plt = None
+
+
 
 class FilterMask(object):
     """
@@ -129,27 +138,35 @@ class Box( FilterMaskDefbyRadiusAngle ):
         FilterMaskDefbyRadiusAngle.__init__( self, xlen, ylen, center, angle)
         
     def plot(self):
-        _plot_box( self.xcenter, self.ycenter, self.xlen, self.ylen, self.angle )
-        
+        #_plot_box( self.xcenter, self.ycenter, self.xlen, self.ylen, self.angle )
+        if plt:
+            plt.plot_box( self.xcenter, self.ycenter, self.xlen, self.ylen, self.angle )
+
 
 class Ellipse( FilterMaskDefbyRadiusAngle ):
     def __init__(self, xlen, ylen, center=None, angle=0 ):        
         self.isa = "ellipse"
         FilterMaskDefbyRadiusAngle.__init__( self, xlen, ylen, center, angle)
     def plot( self ):
-        _plot_ellipse( self.xcenter, self.ycenter, self.xlen, self.ylen, self.angle )
+        if plt:
+            plt.plot_ellipse( self.xcenter, self.ycenter, self.xlen, self.ylen, self.angle )
 
 class Annulus( FilterMaskDefbyRadiusAngle ):
     def __init__(self, inner, outer, center=None ):        
         self.isa = "annulus"
-        FilterMaskDefbyRadiusAngle.__init__( self, inner, outer, center)
+        FilterMaskDefbyRadiusAngle.__init__( self, inner, outer, center)    
+    def plot(self):
+        if plt:
+            plt.plot_annulus( self.xcenter, self.ycenter, self.xlen, self.ylen )
+            
 
 class Circle( FilterMaskDefbyRadiusAngle ):
     def __init__(self, inner, center=None ):        
         self.isa = "circle"
         FilterMaskDefbyRadiusAngle.__init__( self, inner, center=center)
     def plot(self):
-        _plot_ellipse( self.xcenter, self.ycenter, self.xlen, self.xlen, 0 )
+        if plt:
+            plt.plot_circle( self.xcenter, self.ycenter, self.xlen )
             
 class Point( FilterMaskDefbyRadiusAngle ):
     def __init__(self, center=None ):        
@@ -162,23 +179,28 @@ class Pie( FilterMaskDefbyRadiusAngle ):
     def __init__(self, xlen, ylen, start,stop, center=None ):        
         self.isa = "pie"
         FilterMaskDefbyRadiusAngle.__init__( self, xlen, ylen, center=center, angle=start, angle2=stop)
+    def plot( self ):
+        if plt:
+            plt.plot_pie( self.xcenter,self.ycenter,self.xlen,self.ylen,self.angle, self.angle2)
+
 
 class Sector(FilterMaskDefbyRadiusAngle ):
     def __init__(self, start, stop, center=None ):        
         self.isa = "sector"
         FilterMaskDefbyRadiusAngle.__init__( self, None, center=center, angle=start, angle2=stop)
+    def plot(self):
+        if plt:
+            plt.plot_pie( self.xcenter,self.ycenter, 0, 999999.0,self.angle, self.angle2)
+
 
 class Rectangle( FilterMaskDefbyRadiusAngle ):
     def __init__(self, xmin, ymin, xmax, ymax ):        
         self.isa = "rectangle"
         FilterMaskDefbyRadiusAngle.__init__( self, xmax, ylen=ymax, center=(xmin,ymin) )
-
     def plot(self):
-        dx = self.xmax-self.xmin
-        dy = self.ymax-self.ymin
-        xc = (self.xmax+self.xmin)/2.0
-        yc = (self.ymax+self.ymin)/2.0
-        _plot_box( xc, yc, dx, dy, 0.0 )
+        if plt:
+            plt.plot_rectangle( self.xcenter, self.ycenter, self.xlen, self.ylen) 
+
 
 class Field( FilterMask ):
     def __init__(self):
@@ -214,7 +236,12 @@ class Polygon(FilterMask):
         return "{}({})".format( self.isa, coords )
         
     def plot(self):
-        _plot_polygon(self.polypoints)
+
+        if plt:
+            x = [ self.polypoints[i] for i in range(0,len(self.polypoints), 2 )]
+            y = [ self.polypoints[i] for i in range(1,len(self.polypoints), 2 )]
+            plt.plot_polygon(x,y)
+
 
     
 class Region(FilterMask):
@@ -227,10 +254,10 @@ class Region(FilterMask):
         FilterMask.__init__( self, try_string="region({})".format(filename) )
 
 
-def box( xc, yc, xlen, ylen ):
+def box( xc, yc, xlen, ylen, angle=0 ):
     """
     """
-    return Box( xlen, ylen, center=(xc,yc))
+    return Box( xlen, ylen, center=(xc,yc), angle=angle)
     
 def ellipse( xc, yc, xlen, ylen, angle=0):
     """
@@ -266,7 +293,7 @@ def sector( xc, yc, start, stop):
 def rectangle( xmin, ymin, xmax, ymax ):
     """
     """
-    return Rectangle(xmin,xmas,ymin,ymax)
+    return Rectangle(xmin,xmax,ymin,ymax)
 
 
 def field():
@@ -290,88 +317,3 @@ def region( filename ):
 # --------------------------------------
 #
 
-try:
-    from pychips import add_region
-except:
-    def add_region( *arg, **kwargs):
-        raise NotImplementedError("Chips is not installed.  Plotting is not supported")
-        
-import numpy as np
-
-
-def _plot_box( x0, y0, xl, yl, rotang, style="" ):
-    """
-    """
-    
-    dx=xl/2.0
-    dy=yl/2.0
-    
-    xx = np.array([ x0-dx, x0+dx, x0+dx, x0-dx])
-    yy = np.array([ y0-dy, y0-dy, y0+dy, y0+dy])
-    
-    dx = xx-x0
-    dy = yy-y0    
-    cosa = np.cos( np.deg2rad( -rotang) )
-    sina = np.sin( np.deg2rad( -rotang) )    
-    rx = ( dx * cosa + dy * sina ) + x0
-    ry = (-dx * sina + dy * cosa ) + y0
-
-    # plot it
-    add_region(rx,ry, style)
-
-
-def _plot_polygon( points, style="" ):
-    """
-    """
-    x = points[::2]
-    y = points[1::2]
-    add_region(x,y, style)
-
-
-def _plot_ellipse( x0, y0, r1, r2, rotang, style="", nbins=100 ):
-    """
-    Okay, very long way of doing this, not terrible efficent but it works.
-
-    """
-    np.seterr(all='ignore')
-    if nbins < 1:
-        raise RuntimeError("Cannot plot this shape")
-    
-    r12 = r1*r1
-    r22 = r2*r2
-    mr = max([r1,r2])
-    dx = 2.0*max([r1,r2])/nbins
-
-    # Top of ellipse
-    xp = np.arange( -r1-dx, r1+dx, dx )+x0
-    yp = y0 + np.sqrt( r22 * ( 1 - ((xp-x0)**2)/r12))
-    
-    # Bottom of ellipse
-    xm = xp[::-1]
-    ym = y0 - np.sqrt( r22 * ( 1 - ((xm-x0)**2)/r12))
-    
-    # Combine them together, omit 1st point to avoid dup, degenerate polys
-    xp = np.append(xp, xm[1:])
-    yp = np.append(yp, ym[1:])
-    
-    # Remove where Y value is outside of ellipse
-    xy = filter( lambda i: np.isfinite( i[1]), zip(xp,yp))
-    x = np.array([i[0] for i in xy])
-    y = np.array([i[1] for i in xy])
-
-    # rotation matrix
-    dx = x-x0
-    dy = y-y0    
-    cosa = np.cos( np.deg2rad( -rotang) )
-    sina = np.sin( np.deg2rad( -rotang) )    
-    rx = ( dx * cosa + dy * sina ) + x0
-    ry = (-dx * sina + dy * cosa ) + y0
-
-    # plot it
-
-    try:
-        add_region(rx,ry, style)
-    except:
-        # may be too many poits, try with fewer
-        ibins = int(0.9*nbins)
-        _plot_ellipse( x0, y0, r1, r2, rotang, style=style, nbins=ibins ):

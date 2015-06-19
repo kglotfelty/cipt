@@ -12,6 +12,9 @@ from crateify import Crateify
 from smooth_kernels import *
 from filter_mask import *
 from history_crate import *
+from ciao_contrib.runtool import make_tool
+
+
 
 
 class CIAOImage( HistoryIMAGECrate ):
@@ -648,7 +651,7 @@ class CIAOImage( HistoryIMAGECrate ):
         Various forms of non-linear filters applied to the image
         """
         def __call__( self, mask ):
-            from ciao_contrib.runtool import dmimgfilt
+            dmimgfilt = make_tool("dmimgfilt")
             return _run_cmd( dmimgfilt, self.crate, function=self.fun, mask=mask.__str__())
         
     class _Scale(_Callable):
@@ -658,7 +661,7 @@ class CIAOImage( HistoryIMAGECrate ):
         Include trigonometric, log, exponent, and absolute value
         """
         def __call__(self):
-            from ciao_contrib.runtool import dmimgcalc
+            dmimgcalc=make_tool("dmimgcalc")
             return _run_cmd( dmimgcalc, self.crate, op="imgout={}(img1*1.0)".format(self.fun), infile2="" )
 
     class _Cast(_Callable):
@@ -666,7 +669,7 @@ class CIAOImage( HistoryIMAGECrate ):
         Cast to specific datatype
         """
         def __call__(self):
-            from ciao_contrib.runtool import dmimgcalc
+            dmimgcalc=make_tool("dmimgcalc")
             return _run_cmd( dmimgcalc, self.crate, op="imgout=({})(img1)".format(self.fun), infile2="" )
 
 
@@ -676,7 +679,7 @@ class CIAOImage( HistoryIMAGECrate ):
         """
         import tempfile as tempfile
         import numbers as numbers
-        from ciao_contrib.runtool import dmimgcalc
+        dmimgcalc=make_tool("dmimgcalc")
         opmap = { '+' : 'add', '-' : 'sub', '*' : 'mul', '/' : 'div' }
 
         if isinstance(other, CIAOImage):
@@ -713,7 +716,7 @@ class CIAOImage( HistoryIMAGECrate ):
         """        
         """
         import numbers as numbers
-        from ciao_contrib.runtool import dmimgcalc
+        dmimgcalc=make_tool("dmimgcalc")
         if isinstance(other, numbers.Real):
             return _run_cmd( dmimgcalc, self, op="imgout=(img1^{})".format(other), infile2="" )        
         raise NotImplementedError("Must use a real number for power")
@@ -774,7 +777,7 @@ class CIAOImage( HistoryIMAGECrate ):
             >>> img.smooth(Cone(7, norm="max"))
             >>> img.smooth(Boxcar(4,4), method="slide", edge="constant")
         """        
-        from ciao_contrib.runtool import aconvolve
+        aconvolve = make_tool("aconvolve")
         try:
             spec = kernel.get_spec()
             norm = kernel.get_norm()
@@ -903,7 +906,7 @@ class CIAOImage( HistoryIMAGECrate ):
                                               spheres from 1 to 100
 
         """
-        from ciao_contrib.runtool import dmimgadapt
+        dmimgadapt = make_tool("dmimgadapt")
         return _run_cmd( dmimgadapt, self, counts=counts, function=kernel.function, 
             minrad=kernel.minrad, maxrad=kernel.maxrad, numrad=kernel.numrad,
             radscal=kernel.radscale )
@@ -944,7 +947,7 @@ class CIAOImage( HistoryIMAGECrate ):
         """
         Lo and hi pixel threshold
         """
-        from ciao_contrib.runtool import dmimgthresh        
+        dmimgthresh = make_tool("dmimgthresh")
         if None == val:
             val = "INDEF" 
         cut = "" if None == lo else str(lo)
@@ -957,7 +960,7 @@ class CIAOImage( HistoryIMAGECrate ):
         """
         Spatial filter
         """
-        from ciao_contrib.runtool import dmcopy
+        dmcopy = make_tool("dmcopy")
         if None == nullval:
             nullval = "NaN"
         
@@ -966,41 +969,41 @@ class CIAOImage( HistoryIMAGECrate ):
     
 
     def shift( self, dx, dy, **kwargs ):
-        from ciao_contrib.runtool import dmregrid2
+        dmregrid2 = make_tool("dmregrid2")
         return _run_cmd( dmregrid2, self, xoffset=-1.0*float(dx), yoffset=-1.0*float(dy), theta=0, rotx=0, roty=0, **kwargs )
 
         
     def rotate( self, angle, center=None, **kwargs ):
-        from ciao_contrib.runtool import dmregrid2
+        dmregrid2 = make_tool("dmregrid2")
         if None == center:
             center = [ x/2.0 for x in self.get_shape() ]            
         return _run_cmd( dmregrid2, self, theta=angle, rotx=center[0], roty=center[1], **kwargs )
 
         
     def scale( self, sx, sy=None, **kwargs ):
-        from ciao_contrib.runtool import dmregrid2
+        dmregrid2 = make_tool("dmregrid2")
         if None == sy:
             sy = sx
         center = [ x/2.0 for x in self.get_shape() ]            
         return _run_cmd( dmregrid2, self, xscale=sx, yscale=sy, rotx=center[0], roty=center[1], **kwargs )
 
     def blob( self, threshold=None, srconly=True):
-        from ciao_contrib.runtool import dmimgblob
+        dmimgblob=make_tool("dmimgblob")
         if None == threshold:
             from sys import float_info
             threshold = float_info.epsilon
         return _run_cmd( dmimgblob, self, threshold=threshold, srconly=srconly )
                 
     def adaptive_bin( self, snr ):
-        from ciao_contrib.runtool import dmnautilus
+        dmnautilus = make_tool("dmnautilus")
         return _run_cmd( dmnautilus, self, snr=snr )
 
     def distance( self, edgevalue):
-        from ciao_contrib.runtool import dmimgdist
+        dmimgdist = make_tool("dmimgdist")
         return _run_cmd( dmimgdist, self, tolerance=edgevalue )
         
     def fill(self, src, bkg=None, method="poisson"):
-        from ciao_contrib.runtool import dmfilth
+        dmfilth = make_tool("dmfilth")
         
         method = method.lower()
         
@@ -1016,22 +1019,21 @@ class CIAOImage( HistoryIMAGECrate ):
     def powerspectrum( self ):
         """
         """
-        from ciao_contrib.runtool import apowerspectrum
-
+        apowerspectrum = make_tool("apowerspectrum")
         return( _run_cmd( apowerspectrum, self, inp="infilereal"))
     
     def correlate(self, other=None):
         """
         """
-        from ciao_contrib.runtool import acrosscorr
+        acrosscorr = make_tool("acrosscorr") 
         import tempfile as tempfile 
-
         if None == other:
             return( _run_cmd( acrosscorr, self, inp="infile1"))
 
         with tempfile.NamedTemporaryFile() as tmppsf:
             other.write( tmppsf.name, clobber=True )
             oo = _run_cmd( acrosscorr, self, inp="infile1", infile2=tmppsf.name)
+
         return(oo) 
         # TODO Why 2 returns?
         return( _run_cmd( acrosscorr, self))
@@ -1043,9 +1045,9 @@ class CIAOImage( HistoryIMAGECrate ):
     def deconvolve(self, psf, numiter=100, method="lucy", xc="INDEF", yc="INDEF"):
         """
         """
-        from ciao_contrib.runtool import arestore
-        import tempfile as tempfile 
+        arestore = make_tool("arestore")
 
+        import tempfile as tempfile 
         with tempfile.NamedTemporaryFile() as tmppsf:
             psf.write( tmppsf.name, clobber=True )
             oo = _run_cmd( arestore, self, psffile=tmppsf.name, numiter=numiter, psf_x_center=str(xc), psf_y_center=str(yc))
@@ -1053,7 +1055,7 @@ class CIAOImage( HistoryIMAGECrate ):
         return(oo) 
     
     def csmooth( self, sigmin=3, sigmax=5, kernel="gauss", sclmin="INDEF", sclmax=20):
-        from ciao_contrib.runtool import csmooth
+        csmooth = make_tool("csmooth")
         return( _run_cmd( csmooth, self, sclmap="", outsigfile="", outsclfile="", conmeth="fft", conkerneltype=kernel, sigmin=sigmin, sigmax=sigmax, sclmin=str(sclmin), sclmax=str(sclmax),  sclmode="compute") )
 
 
@@ -1064,15 +1066,15 @@ class CIAOImage( HistoryIMAGECrate ):
 
     # -------------- Image returns a Region ------------------------
     def contour( self, levels):
-        from ciao_contrib.runtool import dmcontour
+        dmcontour = make_tool("dmcontour")
         return(_get_reg( dmcontour, self, levels=levels ))
                 
     def ellipse( self, fraction, **kwargs):
-        from ciao_contrib.runtool import dmellipse
+        dmellipse = make_tool("dmellipse")
         return(_get_reg( dmellipse, self, fraction=fraction, **kwargs ))
 
     def hull( self, tolerance=0):
-        from ciao_contrib.runtool import dmimghull
+        dmimghull = make_tool("dmimghull")
         return(_get_reg( dmimghull, self, tolerance=tolerance ))
 
     def dmimglasso( self):
@@ -1085,12 +1087,12 @@ class CIAOImage( HistoryIMAGECrate ):
     # Image returns a Table
     def histogram(self, grid="1"):
         # Todo: make grid more pythonic (list of lo/hi pars, min:max:bin, grid() etc
-        from ciao_contrib.runtool import dmimghist
+        dmimghist = make_tool("dmimghist")
         return( _get_table( dmimghist, self, hist=grid) )
         
     def project(self, axis):
-        # Todo: make separate xproject and yproject routines
-        from ciao_contrib.runtool import dmimgproject
+        # Todo: make separate xproject and yproject routines 
+        dmimgproject = make_tool("dmimgproject")
         if axis not in ['x','y']:
             raise ValueError("axis must be either 'x' or 'y'")
         return( _get_table( dmimgproject, self, axis=axis ))
@@ -1116,6 +1118,22 @@ class CIAOImage( HistoryIMAGECrate ):
 
     # ------------- Returns a par/dict ------------------
 
+    def world(self):
+        # dmcoords op=cel
+        raise NotImplementedError("This command is not currently supported")
+    
+    def physical(self):
+        # dmcoords op=sky
+        raise NotImplementedError("This command is not currently supported")
+
+    def logical(self):
+        # dmcorods op=logical
+        raise NotImplementedError("This command is not currently supported")
+
+    def offaxis(self):
+        # dmcoords msc
+        raise NotImplementedError("This command is not currently supported")
+
     def stat(self):
         #dmstat    
         raise NotImplementedError("This command is not currently supported")
@@ -1136,7 +1154,7 @@ class CIAOImage( HistoryIMAGECrate ):
     
     def _test_(self):
 
-        if False:
+        if True:
             for mth in ["min","max","mean","median","mode","mid","sigma","extreme",
                 "locheq","kuwahara","unsharp","range","variance","nmode",
                 "q25","q33","q67","q75","mcv","sum","rclip","peak","valley",
@@ -1144,14 +1162,14 @@ class CIAOImage( HistoryIMAGECrate ):
                 "sig3mean","sig3median" ]:
                     getattr( self, mth)(Box(5)).write( mth+".out", clobber=True )
                 
-        if False:
+        if True:
             for mth in ["cos", "sin", "tan", "acos", "asin", "atan", "cosh", 
                 "sinh", "tanh", "exp", "log", "ln", "sqrt", "fabs",
                 "asinh", "acosh", "atanh",
                 "byte", "short", "long", "ushort", "ulong", "float", "double", "int" ]:
                     getattr( self, mth)().write(mth+".out", clobber=True )
                 
-        if False:
+        if True:
             for k in [ Gaussian(3), Gaussian(3,5),
                 Boxcar(5), Boxcar(9,5),
                 Tophat(4), Tophat( 10,2),
@@ -1168,19 +1186,19 @@ class CIAOImage( HistoryIMAGECrate ):
                     n=n.split(":")[1].replace(",","_").replace("(","_").replace(")","")
                     self._smooth(k).write( n+".out", clobber=True)
 
-        if False:
+        if True:
             for k in [AdaptGaussian(maxrad=10), AdaptBoxcar(maxrad=10), AdaptCone(maxrad=10), 
                 AdaptExp(maxrad=10), AdaptPyramid(maxrad=10), AdaptQuad(maxrad=10), 
                 AdaptSphere(maxrad=10), AdaptTophat(maxrad=10)]:
                     self._adaptive_smooth( k, 10 ).write( k.function+".out", clobber=True)
 
-        if False:
+        if True:
             self.thresh().write("thresh0.out", clobber=True)
             self.thresh(1).write("thresh1.out", clobber=True)
             self.thresh(None,3, val=3).write("thresh_max3.out",clobber=True)
             self._smooth(Gaussian(3)).thresh(0.1,3,val=None).write("thresh_range.out",clobber=True)
 
-        if False:
+        if True:
             self.filter(Field(), coord="(#1,#2)").write("field.out", clobber=True)
             self.filter("field()", coord="(#1,#2)").write("field_str.out", clobber=True)
             self.filter(Circle(200,(300,300)), coord="(#1,#2)").write("circle.out", clobber=True)
@@ -1208,7 +1226,7 @@ class CIAOImage( HistoryIMAGECrate ):
             self.filter(elxor, coord="(#1,#2)").write("xor.out", clobber=True)
             self.filter(eland, coord="(#1,#2)").write("and.out", clobber=True)
         
-        if False:
+        if True:
             self.fill( circle(4210,4055,37.922803), annulus(4210,4054,52.038447,74.69442)).write("fill_poisson.out", clobber=True)
             self.fill( circle(4210,4055,37.922803), annulus(4210,4054,52.038447,74.69442), method="dist").write("fill_dist.out", clobber=True)
             self.fill( circle(4210,4055,37.922803), method="global").write("fill_global.out", clobber=True)
@@ -1216,7 +1234,7 @@ class CIAOImage( HistoryIMAGECrate ):
             self.fill( circle(4210,4055,37.922803), circle(4210,4054,74.69442), method="poly").write("fill_poly.out", clobber=True)
             
 
-        if False:
+        if True:
             (self+0).write("add.out", clobber=True)
             (self-0).write("sub.out", clobber=True)
             (self*1).write("mul.out", clobber=True)
@@ -1233,7 +1251,7 @@ class CIAOImage( HistoryIMAGECrate ):
             (self/self).write("c_div.out", clobber=True)
         
         
-        if False:
+        if True:
 
             self.power(2).power(0.5).write("power_square_sqrt.out", clobber=True)
             self.blob().write("blob_def.out", clobber=True)
@@ -1254,7 +1272,7 @@ class CIAOImage( HistoryIMAGECrate ):
 
             pass
             
-        if False:
+        if True:
             self.gaus(3).powerspectrum().write("powerspectrum.out",clobber=True)
             self.correlate().write("auto_correlate.out", clobber=True )
             self.correlate( self.tophat(3) ).write("correlate.out", clobber=True)
@@ -1262,7 +1280,7 @@ class CIAOImage( HistoryIMAGECrate ):
             self.gaus(3).deconvolve( self ).write("deconvolve.out", clobber=True)
             self.csmooth( 3,6,sclmax=10).write("csmooth.out", clobber=True)
             
-        if False:
+        if True:
             self.gaus(3).contour("1").write( "contour_reg.out")
             self.box(10).ellipse( 0.5).write( "ellipse_reg.out")
             self.box(10).ellipse(0.5, shape="rotbox").write("rotbox_reg.out")
@@ -1326,4 +1344,6 @@ def _get_table( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
 
 
 
-###img = CIAOImage("img.fits")
+#img = CIAOImage("img.fits")
+#img._test_()
+
