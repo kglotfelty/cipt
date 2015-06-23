@@ -69,6 +69,9 @@ class FilterMask(object):
         ret = "+".join( [ "{}*{}".format(x, o) for x in cpts for o in cpto])
         return FilterMask(ret)
 
+
+    # TODO:  BUG FIX:   Circle(10)+Box(3,4,angle=5)-Annulus(1,3)
+    #          removes the annulus for both.  "-" needs to happen before "+"
     def __sub__(self,other):
         # Inversion is hard.  We only do the simple case
         # where all the shapes are either anded or ored together.
@@ -100,8 +103,52 @@ class FilterMask(object):
         return self.__repr__()
         
     def plot(self):
-        raise NotImplementedError("Plotting not supported at this level")
+        if not plt:
+            return
         
+        shapes = str(self).lower()
+        for s in "*+&|!":
+            shapes = shapes.replace(s, "@")
+        shapes = shapes.split("@")
+
+        for shape in shapes:
+            if not shape: continue
+            pars = shape.replace("(","@").replace(",","@").replace(")","@").split("@")
+
+            vals = [ float(p) for p in pars[1:] if len(p)>0 ]
+            vals.insert(0, -999)
+ 
+            try:
+                if "annulus" == pars[0]:
+                    plt.plot_annulus( vals[1], vals[2], vals[3], vals[4] )
+                elif "box" == pars[0]:
+                    plt.plot_box( vals[1], vals[2], vals[3], vals[4] )
+                elif "rotbox" == pars[0]:
+                    plt.plot_box( vals[1], vals[2], vals[3], vals[4], vals[5] )
+                elif "circle" == pars[0] :
+                    plt.plot_circle( vals[1], vals[2], vals[3]) 
+                elif "ellipse" == pars[0] :
+                    plt.plot_ellipse( vals[1], vals[2], vals[3], vals[4], vals[5] )
+                elif "field" == pars[0] :
+                    pass
+                elif "pie" == pars[0] :
+                    plt.plot_pie( vals[1], vals[2], vals[3], vals[4], vals[5], vals[6] )
+                elif "point" == pars[0] :
+                    pass
+                elif "polygon" == pars[0] :
+                    xx = [ vals[i] for i in range(1,len(vals),2)]
+                    yy = [ vals[i] for i in range(2,len(vals),2)]
+                    plt.plot_polygon(xx, yy)
+                elif "rectangle" == pars[0] :
+                    plt.plot_rectangle( vals[1], vals[2], vals[3], vals[4] )
+                elif "sector" == pars[0] :
+                    plt.plot_pie( vals[1], vals[2], 0, 999999, vals[3], vals[4] )
+                else:
+                    raise ValueError("Unknown shape={}".format(pars[0]))
+            except:
+                print "Problem plotting {},  skipping it.".format(shape)
+                pass
+
 
 class FilterMaskDefbyRadiusAngle(FilterMask):
     """
@@ -136,70 +183,48 @@ class Box( FilterMaskDefbyRadiusAngle ):
         ylen = xlen if ylen is None else ylen
         self.isa = "box"
         FilterMaskDefbyRadiusAngle.__init__( self, xlen, ylen, center, angle)
-        
-    def plot(self):
-        #_plot_box( self.xcenter, self.ycenter, self.xlen, self.ylen, self.angle )
-        if plt:
-            plt.plot_box( self.xcenter, self.ycenter, self.xlen, self.ylen, self.angle )
 
 
 class Ellipse( FilterMaskDefbyRadiusAngle ):
     def __init__(self, xlen, ylen, center=None, angle=0 ):        
         self.isa = "ellipse"
         FilterMaskDefbyRadiusAngle.__init__( self, xlen, ylen, center, angle)
-    def plot( self ):
-        if plt:
-            plt.plot_ellipse( self.xcenter, self.ycenter, self.xlen, self.ylen, self.angle )
+
 
 class Annulus( FilterMaskDefbyRadiusAngle ):
     def __init__(self, inner, outer, center=None ):        
         self.isa = "annulus"
         FilterMaskDefbyRadiusAngle.__init__( self, inner, outer, center)    
-    def plot(self):
-        if plt:
-            plt.plot_annulus( self.xcenter, self.ycenter, self.xlen, self.ylen )
-            
+
 
 class Circle( FilterMaskDefbyRadiusAngle ):
     def __init__(self, inner, center=None ):        
         self.isa = "circle"
         FilterMaskDefbyRadiusAngle.__init__( self, inner, center=center)
-    def plot(self):
-        if plt:
-            plt.plot_circle( self.xcenter, self.ycenter, self.xlen )
+
             
 class Point( FilterMaskDefbyRadiusAngle ):
     def __init__(self, center=None ):        
         self.isa = "point"
         FilterMaskDefbyRadiusAngle.__init__( self, None, center=center)
-    def plot(self):
-        pass # points not plotted
+
 
 class Pie( FilterMaskDefbyRadiusAngle ):
     def __init__(self, xlen, ylen, start,stop, center=None ):        
         self.isa = "pie"
         FilterMaskDefbyRadiusAngle.__init__( self, xlen, ylen, center=center, angle=start, angle2=stop)
-    def plot( self ):
-        if plt:
-            plt.plot_pie( self.xcenter,self.ycenter,self.xlen,self.ylen,self.angle, self.angle2)
 
 
 class Sector(FilterMaskDefbyRadiusAngle ):
     def __init__(self, start, stop, center=None ):        
         self.isa = "sector"
         FilterMaskDefbyRadiusAngle.__init__( self, None, center=center, angle=start, angle2=stop)
-    def plot(self):
-        if plt:
-            plt.plot_pie( self.xcenter,self.ycenter, 0, 999999.0,self.angle, self.angle2)
 
 
 class Rectangle( FilterMaskDefbyRadiusAngle ):
     def __init__(self, xmin, ymin, xmax, ymax ):        
         self.isa = "rectangle"
         FilterMaskDefbyRadiusAngle.__init__( self, xmax, ylen=ymax, center=(xmin,ymin) )
-    def plot(self):
-        if plt:
-            plt.plot_rectangle( self.xcenter, self.ycenter, self.xlen, self.ylen) 
 
 
 class Field( FilterMask ):
@@ -210,8 +235,6 @@ class Field( FilterMask ):
     def __repr__(self):
         return "field()"
         
-    def plot(self):
-        pass  # fields are not plotted
     
     
 class Polygon(FilterMask):
@@ -233,15 +256,7 @@ class Polygon(FilterMask):
     
     def __repr__(self):
         coords = ",".join(map(str, self.polypoints))        
-        return "{}({})".format( self.isa, coords )
-        
-    def plot(self):
-
-        if plt:
-            x = [ self.polypoints[i] for i in range(0,len(self.polypoints), 2 )]
-            y = [ self.polypoints[i] for i in range(1,len(self.polypoints), 2 )]
-            plt.plot_polygon(x,y)
-
+        return "{}({})".format( self.isa, coords )        
 
     
 class Region(FilterMask):
