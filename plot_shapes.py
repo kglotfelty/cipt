@@ -15,15 +15,76 @@ __all__ = [ "plot_ellipse", "plot_box", "plot_circle", "plot_rectangle", "plot_p
 
 
 import numpy as np
-from pychips import add_region, add_label
 
-def plot_ellipse( x0, y0, r1, r2, rotang=None, style="", label=None, nbins=200 ):
+
+
+def simplify_polygon( xx, yy, delta ):
+    """
+    Stolen from Doug's simplify_polygon routine
+    """
+   
+    def filter_point(x, y, delta2, ix):
+        """Filter the data around point ix"""
+
+        # We don't want all points near d2, just the "connected" points.
+        #
+        d2 = (x[ix+1:] - x[ix])**2 + (y[ix+1:] - y[ix])**2
+        idx = [ix]
+        p = 0
+        while p < d2.size and d2[p] <= delta2:
+            idx.append(p + ix + 1)
+            p += 1
+
+        return (x[idx].mean(), y[idx].mean(), ix + len(idx))      
+    
+
+    def clean_points(x, y, delta):
+        """Return a set of 'cleaned' points."""
+
+        ox = []
+        oy = []
+        i = 0
+        delta2 = delta * delta
+
+        while i < x.size:
+            (nx,ny,ni) = filter_point(x, y, delta2, i)
+            ox.append(nx)
+            oy.append(ny)
+            i = ni
+
+        return (np.asarray(ox), np.asarray(oy))
+
+
+    xp, yp = clean_points( np.asarray(xx), np.asarray(yy), delta )
+    
+    return xp, yp
+
+
+def add_region( xx, yy, style, delta=0 ):
+    """
+    Wrapper around Chips' routine.  Will try with all data points,
+    and if it fails then will try to simplify the polygon.
+    """
+
+    import pychips as chips
+    
+    if delta > 2:
+        raise RuntimeError("Problem plotting shape")
+
+    try:
+        chips.add_region( xx,yy, style)
+    except:
+        delta = delta + 0.1
+        xp, yp = simplify_polygon( xx, yy, delta=delta)
+        add_region( xp, yp, style, delta=delta )
+    
+
+def plot_ellipse( x0, y0, r1, r2, rotang=None, style="" ):
     """
     plot a rotated ellipse
     
     >>> plot_ellipse( 10, 10, 20, 15, 45)
     >>> plot_ellipse( 10, 10, 20, 15, 45, {'fill.style' : 'none' })
-    >>> plot_ellipse( 10, 10, 20, 15, 30, label="Src-1")
 
     """
 
@@ -45,8 +106,7 @@ def plot_ellipse( x0, y0, r1, r2, rotang=None, style="", label=None, nbins=200 )
     if None == rotang:
         rotang = 0
 
-    if nbins < 1:
-        raise RuntimeError("Cannot plot ellipse with less than 1 point")
+    nbins = 200
 
     orig_err = np.seterr( all='ignore' )
     
@@ -96,14 +156,7 @@ def plot_ellipse( x0, y0, r1, r2, rotang=None, style="", label=None, nbins=200 )
     ry = (-x * sina + y * cosa ) + y0
 
     # plot it
-    try:
-        add_region(rx,ry, style)
-        if label:
-            add_label(rx[0], ry[0], label )
-    except Exception, e:
-        # try with fewer points
-        ibins = int(0.9*nbins)
-        plot_ellipse( x0, y0, r1, r2, rotang, style=style, label=label, nbins=ibins )
+    add_region(rx,ry, style)
 
 
 def plot_circle( x0, y0, r, style=""):
@@ -195,7 +248,7 @@ def plot_polygon( xvals, yvals, style=""):
     add_region(xvals, yvals, style)
 
     
-def plot_pie( x0, y0, rad_in, rad_out, ang_start, ang_stop , style="", nbins=100 ):
+def plot_pie( x0, y0, rad_in, rad_out, ang_start, ang_stop , style="" ):
     """
     Plot a pie shaped region
     
@@ -205,8 +258,7 @@ def plot_pie( x0, y0, rad_in, rad_out, ang_start, ang_stop , style="", nbins=100
     >>> plot_pie( 0,0, 1,4,-45, 45)
     """
     
-    if nbins < 1:
-        raise RuntimeError("Cannot plot ellipse with less than 1 point")
+    nbins = 100
 
     while (ang_start > ang_stop) : ang_start = ang_start - 360 
 
@@ -230,16 +282,11 @@ def plot_pie( x0, y0, rad_in, rad_out, ang_start, ang_stop , style="", nbins=100
     xx = np.append( x_in, x_out )+x0
     yy = np.append( y_in, y_out )+y0
     
-    try:
-        add_region( xx, yy, style )
-    except Exception, e:
-        # try with fewer points
-        ibins = int(0.9*nbins)
-        plot_pie( x0, y0, rad_in, rad_out, ang_start, ang_stop , style=style, nbins=ibins )
+    add_region( xx, yy, style )
 
 
 
-def plot_annulus( x0, y0, rad_in, rad_out, style="", nbins=100 ):
+def plot_annulus( x0, y0, rad_in, rad_out, style="" ):
     """
     Plot a pie shaped region
     
@@ -258,7 +305,7 @@ def plot_annulus( x0, y0, rad_in, rad_out, style="", nbins=100 ):
 
     """
     
-    plot_pie( x0, y0, rad_in, rad_out, 0.1, 359.9, style=style, nbins=nbins )
+    plot_pie( x0, y0, rad_in, rad_out, 0.1, 359.9, style=style )
 
 
 def plot_point(x0, y0):
