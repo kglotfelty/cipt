@@ -1058,6 +1058,8 @@ class CIAOImage( HistoryIMAGECrate ):
         csmooth = make_tool("csmooth")
         return( _run_cmd( csmooth, self, sclmap="", outsigfile="", outsclfile="", conmeth="fft", conkerneltype=kernel, sigmin=sigmin, sigmax=sigmax, sclmin=str(sclmin), sclmax=str(sclmax),  sclmode="compute") )
 
+            
+            
 
     # -----------------------------------
     def dmmaskbin( self, imgmap):
@@ -1151,6 +1153,27 @@ class CIAOImage( HistoryIMAGECrate ):
         #sherpa
         raise NotImplementedError("Sherpa fitting not yet available")
     
+    # ----------------- ds9 -----------------------
+    def show(self):
+        try:
+            from pyds9 import DS9
+            import tempfile as tempfile 
+            d = DS9()
+            
+            with tempfile.NamedTemporaryFile() as img:
+                self.write( img.name, clobber=True )
+                d.set("file {}".format( img.name ))
+            
+            return d
+            
+        except ImportError:
+            print "Please install pyds9 to enable this feature"
+        except:
+            raise
+
+
+
+
     
     def _test_(self):
 
