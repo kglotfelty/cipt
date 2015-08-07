@@ -42,7 +42,7 @@ class CIAOImage( HistoryIMAGECrate ):
     using the CIAOImage.write() method it will contain
     all the processing commands used.
     
-    There is support for simple arithmetic opertions between
+    There is support for simple arithmetic operations between
     CIAOImage objects of the same size.
     
     >>> img1 = CIAOImage("img1.fits")
@@ -55,16 +55,23 @@ class CIAOImage( HistoryIMAGECrate ):
     >>> 1-img1-1
     >>> img/img.get_key_value("ONTIME")    
     >>> img**2
-        
-            
-    The following methods are avaiable.  They are broken down
-    into several categories.
 
-    
+    Users can also do simple arithmetic with NumPy arrays that are the 
+    same size as the CIAOImage.
+
+    >>> import numpy as np
+    >>> shape = img.get_image().values.shape
+    >>> noise = np.random.poisson( 0.1, size=shape )
+    >>> img2 = img + noise
+            
+    The following methods are available.  They are broken down
+    into several categories.  They are built using various CIAO
+    tools
+
     Smoothing:
 
 
-        Perform linear smoothing with a fixed convoluion kernel
+        Perform linear smoothing with a fixed convolution kernel
         using the 'aconvolve' tool.
         
         The available smoothing kernels are:
@@ -128,6 +135,12 @@ class CIAOImage( HistoryIMAGECrate ):
         >>> img.hanning(10)
         >>> img.racos(0.5, 10) - img.hanning(10)
         
+        Users can also convolve two CIAOImage's or a CIAOImage with 
+        a NumPY array.
+        
+        >>> img.convolve( img2 )
+        >>> img.convolve( np.array( [[1, -1], [-1, 1]] ), norm="none")
+
 
     Adaptive Smoothing
             
@@ -187,6 +200,8 @@ class CIAOImage( HistoryIMAGECrate ):
             
             An adaptive smoothing algorithm.
 
+        >>> img.csmooth( )
+
 
         : adaptive_bin( snr )
             
@@ -203,7 +218,7 @@ class CIAOImage( HistoryIMAGECrate ):
     Non Linear Smoothing:
 
         Non-linear filtering or smoothing is the process of taking
-        a set of pixel values, applying some funtion to them and
+        a set of pixel values, applying some function to them and
         creating a new image whose pixel value is the result of that
         function call.  The function need not do a linear 
         transformation of the value (such as a sum) but can do
@@ -222,7 +237,7 @@ class CIAOImage( HistoryIMAGECrate ):
         3x3 pixel around the current pixel location are inspected and
         the miniumum value of those 9 pixel values is returned.
 
-        : min(FilterMask) : find minium pixel value of those in masked region 
+        : min(FilterMask) : find minimum pixel value of those in masked region 
 
         : max(FilterMask) : find maximum pixel value of those in masked region 
 
@@ -323,7 +338,7 @@ class CIAOImage( HistoryIMAGECrate ):
         >>> img.smooth(Gaussian(3)).rclip(Annulus(20,22))
         >>> img.median( Box(10,10)-Circle(3) )
         
-        (*) The quantile based algorithms use a slighly modified definition.
+        (*) The quantile based algorithms use a slightly modified definition.
         If the number of points is even, rather than compute the 
         average of the two value, the lower value is returned.
 
@@ -534,6 +549,22 @@ class CIAOImage( HistoryIMAGECrate ):
         you may lose pixel value at the edge of the pixels that are
         not recoverable.
 
+
+        : match(other [, **kwargs]) 
+
+        The match method runs the reproject_image routine to match
+        the coordinate systems for the current object with the
+        WCS in the other object.  That is the current 
+        CIAOImage is transformed via its WCS to match the other
+        image.  
+        
+        >>> img1 = CIAOImage("chandra.fits")
+        >>> img2 = CIAOImage("hst.fits")
+        >>> overlay = img1.match(img2)
+        
+        The pixel values in the overlay CIAO image will now match
+        the WCS in the img2 datase.
+
                     
     Transform
 
@@ -549,12 +580,12 @@ class CIAOImage( HistoryIMAGECrate ):
             >>> img.powerspectrum()
 
         : blob( [threshold=~0, srconly=True)
-            The blob method identifies contigious groups of pixels
+            The blob method identifies contiguous groups of pixels
             that are above threhold.  The returned
             object represents a map that identifies which pixels belong 
             together in which group.
             
-            If no threhold is given, a value ~0 is used.
+            If no threshold is given, a value ~0 is used.
             
             Examples:
             
@@ -566,7 +597,7 @@ class CIAOImage( HistoryIMAGECrate ):
             the edge of the image, how far away, ie number of pixels,
             is the current pixel away from that edge.  distance()
             use the city-block style distance computation such
-            that ever pixel is an interger number of pixels away
+            that ever pixel is an integer number of pixels away
             from the edge.
             
             Examples:
@@ -578,14 +609,22 @@ class CIAOImage( HistoryIMAGECrate ):
             the edgevalue, value. 
 
         : correlate( other=None )
+            Correlation is the same as convolution with the convolution
+            kernel flipped (so two are identical for a symmetrical kernel).
+            The leaving the other parameter blank yields the autocorrelation.
 
             >>> img.correlate()
             >>> img.correlate(img2)
+            >>> img.correlate( np.array( [[1,2,3],[1,2,3],[1,2,3]]) )
 
         : deconvolve( ... )
+            Blind deconvolution is always a tricky subject, but 
+            users can use the Richardson-Lucy deconvolution method
+            available in CIAO's arestore         
         
             >>> img.deconvolve( img2)
-            
+            >>> img.deconvolve( np.array( [[1,1,1], [1,3,1], [1,1,1]]) )
+                        
 
     The following method return a TABLECrate, not an Image
     
@@ -604,7 +643,7 @@ class CIAOImage( HistoryIMAGECrate ):
             >>> tab = img.project("x")
             >>> tab = img.project("y")
             
-    The following methos return a Region object
+    The following methods return a Region object
 
       : contour(levels)
       
@@ -630,6 +669,142 @@ class CIAOImage( HistoryIMAGECrate ):
           
             >>> hull = img.hull()
             >>> h1 = img.hull(1)
+
+    The following methods return Python dictionaries
+    
+      Coordinates
+      
+      The coordinate routines below use the CIAO tool dmcoords
+      to convert from the input coordinate systems using the
+      CIAOImage's transform and Chandra's pixlib library.
+      Non Chandra images can generally convert between
+      physical, logical, and usually world coorindates.  The
+      det, msc, and chip coordinates are exclusively for Chandra
+      datasets.      
+      
+      Each of these methods returns a dictionary containing all the
+      coordinate values.  Note:  Ra/Dec are always returned in decimal
+      degrees.
+      
+      : world( ra, dec ) 
+            
+            World coordinates, ie Right Ascension  and Declination
+            (for Chandra in the J2000, fk5,system).
+
+            >>> c = img.world( 34.5569, -14.566 )
+            >>> c = img.world( "23 45 12.232", "-43:32:19.6" ) # TODO 
+
+      : physical( x, y )
+            
+            The physical image pixel system.  Generally this represents 
+            the data within entire image size without and
+            cropping.
+
+            >>> c = img.physical( 4096, 4096 )
+
+      : logical( lx, ly )
+
+            The logical pixel system going from 1 to (M,N) in the
+            Cartesian X and Y system.   [Note: Python using a 0
+            based indexing system, so the values in the array
+            are indexed from 0 to (M-1, N-1).]
+            
+            >>> c = img.logical(10,20)
+
+      : det( detx, dety )
+
+            The Chandra detector coordinate system, a 
+            coordinate system defined in detector plane of the
+            Chandra telescope.
+
+            >>> c = img.det( 16385, 16385 )
+
+      : msc( theta, phi)
+
+            MSC: Mirror Spherical Coordinates, are the pair
+            of angles needed to describe the location relative to
+            the Chandra optical axis.  Theta is the 
+            angular distance, measured in arcmin, away from the 
+            optical axis (ie the 'off axis angle') and phi is
+            the azimuthal angle in degrees around the optical axis.
+
+            >>> c = img.msc( 5, 45 )
+
+      : chip( id, chipx, chipy )
+       
+            Chandra chip coordinates for the detector specified 
+            in the CIAImage's header/meta-data.  
+            
+            >>> c = c.chip(7, 512, 512 )
+            >>> print img.chip(7,512,512)
+            {'chip_id': 7.0, 'phi': 358.4371404326323, 'tdetx': 4429.0, 
+            'tdety': 2214.0, 'logicaly': 183.1776032233852, 'logicalx': 
+            182.7295184280113, 'dety': 4087.794395102537, 'detx': 
+            4415.575824689214, 'ra': 198.8516702952409, 'chipy': 512.0, 
+            'chipx': 512.0, 'y': 3823.210412893541, 'x': 
+            4261.418073712045, 'dec': -16.40350088354444, 'theta': 
+            2.61739491534039}
+      
+      Statistics
+      
+      : stats()
+            
+            Uses dmstat to compute various statistics about the 
+            CIAOImage.  dmstat knows when pixels have been filtered out
+            either via the image subspace information or due to the
+            presense of Null or NaN pixel values.
+      
+            >>> stat = img.filter(circle(4096,4096,100)).stats()
+            >>> print stat
+            {'max_loc': [4170.5, 4042.5], 'numnull': 131256, 'max': 45.0, 
+            'lcentroid': [144.55766115, 247.85339395], 'min': 0.0, 'sum': 
+            22216.0, 'median': 10.0, 'pixelarea': 1968, 'centroid': 
+            [4108.7306446, 4081.9135758], 'stddev': 5.7151233298, 
+            'min_loc': [4022.5, 4162.5], 'mean': 11.288617886}
+
+            The centroid, location of minimum pixel (min_loc),
+            and location of maximum pixle (max_loc) are given in
+            the physical coordinate system.  lcentroid is
+            the centroid in the logical coordinate system.
+      
+      : moments()
+
+            Uses imgmoment to compute the 2nd order moments matrix
+            for the image pixel values.  The most useful application
+            is then to use these to compute the centroid, as well
+            as the rotation angle and the major and minor axes of 
+            the moments of inertia -- commonly used as the elliptical
+            region that encloses the pixel values.
+      
+            >>> mom = img.filter(reg).moments
+            >>> print mom
+            {'angle': 54.6766949999169, 'major': 102.4510379626248, 'centroid': [4281.081534650766, 3950.348949610924], 
+            'matrix': array([[  1.28381000e+05,   3.45607987e-10,   3.20896463e+08],
+                            [ -4.79485607e-09,  -1.13257789e+07,   1.17630918e+08],
+                            [  3.28852636e+08,  -5.38440130e+08,   6.48365063e+11]]), 
+            'minor': 98.73289942300798}
+
+
+    Finally, if users have the pyds9 package installed, they can use the
+    ds9 method to display the CIAOImage
+    
+      : ds9()
+
+            If ds9 is running it will display the CIAOImage in 
+            the current frame (overwriting anything that's already there); 
+            ds9 will be launched if one is not running.
+            
+            It returns the pyds9 object which can be used to interact
+            with the data being displayed
+
+            >>> d = img.ds9()
+            >>> d.set( "cmap bb")
+            >>> d.set( "scale log")
+      
+            Basically the same XPA commands available on the 
+            command line are available via the pyds9 module.
+
+
             
     """
     class _Callable():
@@ -677,14 +852,12 @@ class CIAOImage( HistoryIMAGECrate ):
         """
         Add, Subtract, Multiply, Divide
         """
-        import tempfile as tempfile
         import numbers as numbers
         dmimgcalc=make_tool("dmimgcalc")
         opmap = { '+' : 'add', '-' : 'sub', '*' : 'mul', '/' : 'div' }
 
-        if isinstance(other, CIAOImage):
-            with tempfile.NamedTemporaryFile() as infile2:
-                other.write( infile2.name, clobber=True )
+        if isinstance(other, CIAOImage) or isinstance(other, np.ndarray):
+            with serialize_temp_crate( other ) as infile2:
                 return _run_cmd( dmimgcalc, self, infile2=infile2.name, op=opmap[op] )
         elif isinstance(other, numbers.Real):
             if right:            
@@ -733,7 +906,7 @@ class CIAOImage( HistoryIMAGECrate ):
                 setattr(self, nl, self._NLFilter( self, nl ) )
                 setattr(getattr(self,nl),"__doc__", "Apply {} funtion to all pixels".format(nl))
 
-        # Cannot have methods that start with numbers, so handle this separtely
+        # Cannot have methods that start with numbers, so handle this separately 
         setattr( self, "sig3mean", self._NLFilter( self, "3sigmean") )
         setattr( self, "sig3median", self._NLFilter(self, "3sigmedian"))
 
@@ -808,7 +981,7 @@ class CIAOImage( HistoryIMAGECrate ):
         k = Boxcar( x, y, norm=norm)
         return self._smooth( k, **kwargs )
 
-    def mexhat( self, x, y=None, norm="area", **kwargs):
+    def mexhat( self, x, y=None, norm="none", **kwargs):
         """        
         """
         y = y if y else x
@@ -835,7 +1008,7 @@ class CIAOImage( HistoryIMAGECrate ):
         k = Beta( x,norm=norm)
         return self._smooth( k, **kwargs )
 
-    def sinc( self, x, norm="area", **kwargs):
+    def sinc( self, x, norm="none", **kwargs):
         """        
         """
         k = Sinc( x,norm=norm)
@@ -994,9 +1167,9 @@ class CIAOImage( HistoryIMAGECrate ):
             threshold = float_info.epsilon
         return _run_cmd( dmimgblob, self, threshold=threshold, srconly=srconly )
                 
-    def adaptive_bin( self, snr ):
+    def adaptive_bin( self, snr, **kwargs ):
         dmnautilus = make_tool("dmnautilus")
-        return _run_cmd( dmnautilus, self, snr=snr )
+        return _run_cmd( dmnautilus, self, snr=snr, **kwargs )
 
     def distance( self, edgevalue):
         dmimgdist = make_tool("dmimgdist")
@@ -1021,51 +1194,53 @@ class CIAOImage( HistoryIMAGECrate ):
         """
         apowerspectrum = make_tool("apowerspectrum")
         return( _run_cmd( apowerspectrum, self, inp="infilereal"))
-    
+
     def correlate(self, other=None):
         """
         """
         acrosscorr = make_tool("acrosscorr") 
-        import tempfile as tempfile 
         if None == other:
             return( _run_cmd( acrosscorr, self, inp="infile1"))
 
-        with tempfile.NamedTemporaryFile() as tmppsf:
-            other.write( tmppsf.name, clobber=True )
+        with serialize_temp_crate( other) as tmppsf:
             oo = _run_cmd( acrosscorr, self, inp="infile1", infile2=tmppsf.name)
-
         return(oo) 
-        # TODO Why 2 returns?
-        return( _run_cmd( acrosscorr, self))
 
-
-    def convolve( self, psf ):
-        raise NotImplementedError("")
+    def convolve( self, psf, **kwargs ):
+        aconvolve = make_tool("aconvolve")
+        with serialize_temp_crate( psf ) as tmppsf:
+            oo = _run_cmd( aconvolve, self, kernelspec="file:{}".format(tmppsf.name), **kwargs)
+        return(oo) 
     
     def deconvolve(self, psf, numiter=100, method="lucy", xc="INDEF", yc="INDEF"):
         """
         """
-        arestore = make_tool("arestore")
+        if method not in [ 'lucy' ]:
+            raise NotImplementedError("Unsupported deconvolution algorithm")
 
-        import tempfile as tempfile 
-        with tempfile.NamedTemporaryFile() as tmppsf:
-            psf.write( tmppsf.name, clobber=True )
-            oo = _run_cmd( arestore, self, psffile=tmppsf.name, numiter=numiter, psf_x_center=str(xc), psf_y_center=str(yc))
-        
+        arestore = make_tool("arestore")
+        with serialize_temp_crate( psf) as tmppsf:
+            oo = _run_cmd( arestore, self, psffile=tmppsf.name, numiter=numiter, psf_x_center=str(xc), psf_y_center=str(yc))        
         return(oo) 
     
     def csmooth( self, sigmin=3, sigmax=5, kernel="gauss", sclmin="INDEF", sclmax=20):
         csmooth = make_tool("csmooth")
         return( _run_cmd( csmooth, self, sclmap="", outsigfile="", outsclfile="", conmeth="fft", conkerneltype=kernel, sigmin=sigmin, sigmax=sigmax, sclmin=str(sclmin), sclmax=str(sclmax),  sclmode="compute") )
 
-            
-            
 
-    # -----------------------------------
-    def dmmaskbin( self, imgmap):
-        raise NotImplementedError("This command is not currently supported")
+    def maskbin( self, maskfile):
+        dmmaskbin = make_tool("dmmaskbin")
+        with serialize_temp_crate( maskfile) as mask:
+            oo = _run_cmd( dmmaskbin, self, maskfile=mask.name)        
+        return(oo) 
+
+
+    def match( self, tobe, **kwargs ):
+        ri = make_tool("reproject_image")
+        with serialize_temp_crate( tobe) as matchfile:
+            oo = _run_cmd( ri, self, matchfile=matchfile.name, **kwargs)        
+        return(oo) 
         
-
     # -------------- Image returns a Region ------------------------
     def contour( self, levels):
         dmcontour = make_tool("dmcontour")
@@ -1079,18 +1254,20 @@ class CIAOImage( HistoryIMAGECrate ):
         dmimghull = make_tool("dmimghull")
         return(_get_reg( dmimghull, self, tolerance=tolerance ))
 
-    def dmimglasso( self):
-        raise NotImplementedError("This command is not currently supported")
+    def lasso( self, xpos, ypos, low_value=0, high_value="INDEF", **kwargs):
+        dmimglasso = make_tool("dmimglasso")
+        return( _get_reg( dmimglasso, self, xpos=xpos, ypos=ypos, low_value=low_value, high_value=high_value, **kwargs))
 
     def get_src_region( self):
         raise NotImplementedError("This command is not currently supported")
 
 
-    # Image returns a Table
+    # ------------------- Image returns a Table -------------------------
     def histogram(self, grid="1"):
         # Todo: make grid more pythonic (list of lo/hi pars, min:max:bin, grid() etc
         dmimghist = make_tool("dmimghist")
         return( _get_table( dmimghist, self, hist=grid) )
+
         
     def project(self, axis):
         # Todo: make separate xproject and yproject routines 
@@ -1098,6 +1275,29 @@ class CIAOImage( HistoryIMAGECrate ):
         if axis not in ['x','y']:
             raise ValueError("axis must be either 'x' or 'y'")
         return( _get_table( dmimgproject, self, axis=axis ))
+
+    def radial( self, xpos, ypos, inner=0, outer=1000, step=10, coord="sky", **kwargs ):
+        """
+        Create a radial profile from a fixed grid inner:outer:step
+        """
+        dmextract = make_tool("dmextract")
+        
+        vfspec="[bin {}=annulus({},{},{}:{}:{})]".format(coord,xpos, ypos, inner, outer, step )
+        return _get_table( dmextract, self, vfspec=vfspec, opt="generic", **kwargs )
+
+
+    def extract( self, reg, coord="sky", **kwargs ):
+        """
+        Extract counts in region
+        """
+
+        # TODO: bkg requires infile name, more work for Crateify routine 
+
+        dmextract = make_tool("dmextract")
+
+        vfspec="[bin {}={}]".format(coord,reg )
+        return _get_table( dmextract, self, vfspec=vfspec, opt="generic", **kwargs )
+
 
     def celldetect(self):
         raise NotImplementedError("This command is not currently supported")
@@ -1108,41 +1308,107 @@ class CIAOImage( HistoryIMAGECrate ):
     def wavdetect(self):
         raise NotImplementedError("This command is not currently supported")
         
-    def dmextract(self):
-        """
-        radial, grid, stack, ...
-        """
-        raise NotImplementedError("This command is not currently supported")
-
     def dmimgpick(self):
         raise NotImplementedError("This command is not currently supported")
 
-
     # ------------- Returns a par/dict ------------------
+        
+    @staticmethod    
+    def _get_dmcoords_values(dmcoords):
+        """
+        """
+        retval = {}
+        for vv in [ 'chip_id', 'chipx', 'chipy', 'tdetx', 'tdety', 'detx', 'dety', 'x', 'y', 'logicalx', 'logicaly', 'ra', 'dec', 'theta', 'phi']:
+            retval[vv] = float(getattr( dmcoords, vv )  )
+        return retval
+            
 
-    def world(self):
-        # dmcoords op=cel
-        raise NotImplementedError("This command is not currently supported")
+    def world(self, ra, dec):
+        # TODO: Convert ra/dec to deg
+        dmcoords = make_tool("dmcoords")
+        with serialize_temp_crate( self) as tmpimg:
+            dmcoords.punlearn()
+            dmcoords( tmpimg.name, op="cel", celfmt="deg", ra=ra, dec=dec)
+        return self._get_dmcoords_values( dmcoords )
     
-    def physical(self):
-        # dmcoords op=sky
-        raise NotImplementedError("This command is not currently supported")
+    def physical(self, xx, yy):
+        dmcoords = make_tool("dmcoords")
+        with serialize_temp_crate( self) as tmpimg:
+            dmcoords.punlearn()
+            dmcoords( tmpimg.name, op="sky", celfmt="deg", x=xx, y=yy)
+        return self._get_dmcoords_values( dmcoords )
 
-    def logical(self):
-        # dmcorods op=logical
-        raise NotImplementedError("This command is not currently supported")
+    def logical(self, lx, ly):
+        dmcoords = make_tool("dmcoords")
+        with serialize_temp_crate( self) as tmpimg:
+            dmcoords.punlearn()
+            dmcoords( tmpimg.name, op="logical", celfmt="deg", logicalx=lx, logicaly=ly)
+        return self._get_dmcoords_values( dmcoords )
 
-    def offaxis(self):
-        # dmcoords msc
-        raise NotImplementedError("This command is not currently supported")
+    def det(self, detx, dety):
+        dmcoords = make_tool("dmcoords")
+        with serialize_temp_crate( self) as tmpimg:
+            dmcoords.punlearn()
+            dmcoords( tmpimg.name, op="det", celfmt="deg", detx=detx, dety=dety)
+        return self._get_dmcoords_values( dmcoords )
 
-    def stat(self):
-        #dmstat    
-        raise NotImplementedError("This command is not currently supported")
+    def msc(self, theta, phi):
+        dmcoords = make_tool("dmcoords")
+        with serialize_temp_crate( self) as tmpimg:
+            dmcoords.punlearn()
+            dmcoords( tmpimg.name, op="msc", celfmt="deg", theta=theta, phi=phi)
+        return self._get_dmcoords_values( dmcoords )
+
+    def chip(self, chipid, chipx, chipy):
+        dmcoords = make_tool("dmcoords")
+        with serialize_temp_crate( self) as tmpimg:
+            dmcoords.punlearn()
+            dmcoords( tmpimg.name, op="chip", celfmt="deg", chip_id=chipid, chipx=chipx, chipy=chipy)
+        return self._get_dmcoords_values( dmcoords )
+
+    def stats(self):
+        """
+        
+        """
+        dmstat = make_tool("dmstat")
+        with serialize_temp_crate( self) as tmpimg:
+            dmstat.punlearn()
+            dmstat( tmpimg.name, centroid=False, sigma=True, median=True)
+            retval = {
+              'min' : float(dmstat.out_min),
+              'max' : float(dmstat.out_max),
+              'min_loc' : [float(x) for x in dmstat.out_min_loc.split(",") ],
+              'max_loc' : [float(x) for x in dmstat.out_max_loc.split(",") ],
+              'mean' : float(dmstat.out_mean),
+              'median' : float(dmstat.out_median),
+              'stddev' : float(dmstat.out_sigma),
+              'sum' : float(dmstat.out_sum),
+              'pixelarea' : int( dmstat.out_good ),
+              'numnull' : int( dmstat.out_null )
+              }
+            dmstat( tmpimg.name, centroid=True, sigma=False, median=False)
+            retval["centroid"] = [float(x) for x in dmstat.out_cntrd_phys.split(",") ]
+            retval["lcentroid"] = [float(x) for x in dmstat.out_cntrd_log.split(",") ]
+
+        return retval
         
     def moments(self):
-        #imgmoment
-        raise NotImplementedError("This command is not currently supported")
+        """
+        """
+        mom = make_tool("imgmoment")
+        with serialize_temp_crate( self) as tmpimg:
+            mom.punlearn()
+            mom( tmpimg.name )
+        retval = {}
+        retval['centroid'] = [ mom.x_mu, mom.y_mu ]
+        retval['angle' ] = mom.phi
+        retval['major'] = mom.xsig
+        retval['minor'] = mom.ysig
+        retval['matrix'] = np.array ( [ [mom.m_0_0, mom.m_0_1, mom.m_0_2],
+                                        [mom.m_1_0, mom.m_1_1, mom.m_1_2],
+                                        [mom.m_2_0, mom.m_2_1, mom.m_2_2] ] )
+        return retval
+
         
     def extent( self ):
         #srcextent
@@ -1154,20 +1420,19 @@ class CIAOImage( HistoryIMAGECrate ):
         raise NotImplementedError("Sherpa fitting not yet available")
     
     # ----------------- ds9 -----------------------
-    def show(self):
+    def ds9(self):
         try:
             from pyds9 import DS9
-            import tempfile as tempfile 
             d = DS9()
             
-            with tempfile.NamedTemporaryFile() as img:
-                self.write( img.name, clobber=True )
+            with serialize_temp_crate( self) as img:
                 d.set("file {}".format( img.name ))
             
             return d
             
         except ImportError:
             print "Please install pyds9 to enable this feature"
+            return None
         except:
             raise
 
@@ -1363,6 +1628,27 @@ def _get_table( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
     print mycmd
     x = mycmd()
     if x : print x 
+
+
+
+import contextlib
+@contextlib.contextmanager
+def serialize_temp_crate( data2save ):
+    """
+    
+    """
+    import tempfile as tempfile 
+    nn = tempfile.NamedTemporaryFile( )
+    try:
+        data2save.write(nn.name, clobber=True )
+    except:
+        from crates_contrib.utils import make_image_crate
+        make_image_crate( data2save ).write( nn.name, clobber=True )
+    yield nn
+
+
+        
+
 
 
 
