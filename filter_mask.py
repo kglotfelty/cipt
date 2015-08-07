@@ -266,7 +266,10 @@ class Region(FilterMask):
     def __init__( self, filename ):
         #reg = _region.regParse( "region({})".format(filename))
         #ss = _region.regRegionString( reg )
-        FilterMask.__init__( self, try_string="region({})".format(filename) )
+        try:
+            FilterMask.__init__( self, try_string="region({})".format(filename) )
+        except:
+            FilterMask.__init__( self, filename )
 
 
 def box( xc, yc, xlen, ylen, angle=0 ):
