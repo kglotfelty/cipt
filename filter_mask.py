@@ -8,9 +8,8 @@ import region as _region
 try:
     import chips_contrib.plot_shapes as plt
 except:
-    import warnings
-    warnings.warn("Cannot locate chips_contrib.plot_shape module.  Region plotting will not be available.")
     plt = None
+    
 
 
 
@@ -104,6 +103,8 @@ class FilterMask(object):
         
     def plot(self):
         if not plt:
+            import warnings as warn
+            warn.warn("Cannot locate chips_contrib.plot_shape module.  Region plotting will not be available.")
             return
         
         shapes = str(self).lower()
