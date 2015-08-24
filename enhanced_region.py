@@ -49,10 +49,9 @@ circle(1000,1000,50)*!box(1010,1010,50,100)
 """
 
 
+__all__ = [ 'annulus', 'box', 'circle', 'ellipse', 'field', 'pie', 'point', 'polygon', 'region', 'rectangle', 'sector' ]
 
-__all__ = [ 'annulus', 'box', 'circle', 'ellipse', 'field', 'pie', 'point', 'polygon', 'polygon_vec', 'region', 'rectangle', 'sector' ]
 
-    
 _AND_ = "*"
 _OR_ = "+"
 _NOT_ = "!"
@@ -115,7 +114,6 @@ except:
         return plot_wrap
 
 
-
 def wrap_vals( vv ):
     """Utility to wrap arrays to be pased in byreference"""
     if vv:
@@ -125,20 +123,21 @@ def wrap_vals( vv ):
     return retval
 
 
+
 class EnhancedShape( object ):
     """
     All regions are composed of simple geometric shapes (even 1 region with only
-    1 shape is still a EnhancedRegion() ). 
-    
-    This object isn't meant to be exposed to users    
-    """    
+    1 shape is still a EnhancedRegion() ).
+
+    This object isn't meant to be exposed to users
+    """
 
     precise_string = "{:.12g}"  # Format string for double values when printed
 
     def __init__(self, shape_ptr ):
         """The input is a c_void_p regShape pointer.  Uses the region lib
         API to extract the shape parameters"""
-        
+
         self._ptr = shape_ptr
         self.get_name()
         self.get_points()
@@ -161,8 +160,8 @@ class EnhancedShape( object ):
     def get_points(self):
         """
         Gets the x,y values.
-        
-        The string version of the values are stored now too.  
+
+        The string version of the values are stored now too.
         TODO: wrap w/ a setter that does the string conversion so that
         if class is exposed then string is kept in sync with double values
         """
@@ -176,20 +175,20 @@ class EnhancedShape( object ):
 
     def get_radii(self):
         """
-        Gets the radius/radii 
-        
+        Gets the radius/radii
+
         Also stores the string version (see TODO above)
         """
         nrad = region_lib.regShapeRadii( self._ptr )
         outr = (c_double * nrad)()
         region_lib.regShapeGetRadii( self._ptr, byref(outr) )
         self.rad = [r for r in outr]
-    
+
 
     def get_angle(self):
         """
         Gets the angle/angles
-        
+
         Also stores the string version (see TODO above)
         """
         nang = region_lib.regShapeAngles( self._ptr )
@@ -200,14 +199,14 @@ class EnhancedShape( object ):
 
     def get_component(self):
         """
-        Stores the component value.  The actual value is not used.  All 
+        Stores the component value.  The actual value is not used.  All
         the shapes with the component value are grouped together and AND'ed.
         Diff components are OR'ed.
         """
         self.component = region_lib.regShapeGetComponent( self._ptr )
 
 
-    def store_string(self):
+    def store_string(self, fmt_str):
         """
         Convert the values to strings using the desired precision/format
         """
@@ -215,7 +214,23 @@ class EnhancedShape( object ):
         self.yy_str = [ self.precise_string.format(y) for y in self.yy ]
         self.rad_str = [ self.precise_string.format(y) for y in self.rad ]
         self.ang_str = [ self.precise_string.format(y) for y in self.ang ]
-        
+
+        self.fmt_vals = {
+            'x0' : self.xx_str[0] if len(self.xx_str) > 0 else None,
+            'x1' : self.xx_str[1] if len(self.xx_str) > 1 else None,
+            'y0' : self.yy_str[0] if len(self.yy_str) > 0 else None,
+            'y1' : self.yy_str[1] if len(self.yy_str) > 1 else None,
+            'r0' : self.rad_str[0] if len(self.rad_str) > 0 else None,
+            'r1' : self.rad_str[1] if len(self.rad_str) > 1 else None,
+            'a0' : self.ang_str[0] if len(self.ang_str) > 0 else None,
+            'a1' : self.ang_str[1] if len(self.ang_str) > 1 else None,
+            'i'  : self.include,
+            'n'  : self.shape,
+            'xy' : ",".join([ "{},{}".format(x,y) for x,y in zip( self.xx_str, self.yy_str ) ])
+            }
+            
+        return fmt_str.format( **self.fmt_vals )
+
 
     def __str__(self):
         raise NotImplementedError("Implement this in the derived classes")
@@ -229,35 +244,29 @@ class EnhancedShape( object ):
 class Annulus(EnhancedShape):
     """An annulus is defined by x_center, y_center, inner_radius, outer_radius"""
     def __str__( self ):
-        self.store_string()
-        return "{i}{n}({x0},{y0},{r0},{r1})".format(i=self.include,
-            n=self.shape,x0=self.xx_str[0],y0=self.yy_str[0],r0=self.rad_str[0],r1=self.rad_str[1])
+        return self.store_string("{i}{n}({x0},{y0},{r0},{r1})")
 
 
     @with_plotting
     def plot(self, engine):
-        engine.plot_annulus( self.xx[0], self.yy[0], self.rad[0], self.rad[1] ) 
+        engine.plot_annulus( self.xx[0], self.yy[0], self.rad[0], self.rad[1] )
 
 
 class Box(EnhancedShape):
     """A box is defined by x_center, y_center, x_length, y_length"""
     def __str__( self ):
-        self.store_string()
-        return "{i}{n}({x0},{y0},{r0},{r1})".format(i=self.include,
-            n=self.shape,x0=self.xx_str[0],y0=self.yy_str[0],r0=self.rad_str[0],r1=self.rad_str[1])
+        return self.store_string("{i}{n}({x0},{y0},{r0},{r1})")
 
 
     @with_plotting
     def plot(self,engine):
-        engine.plot_box( self.xx[0], self.yy[0], self.rad[0], self.rad[1] ) 
+        engine.plot_box( self.xx[0], self.yy[0], self.rad[0], self.rad[1] )
 
 
 class Circle(EnhancedShape):
     """A circle is defined by x_center, y_center, radius"""
     def __str__( self ):
-        self.store_string()
-        return "{i}{n}({x0},{y0},{r0})".format(i=self.include,
-            n=self.shape,x0=self.xx_str[0],y0=self.yy_str[0],r0=self.rad_str[0])
+        return self.store_string("{i}{n}({x0},{y0},{r0})")
 
 
     @with_plotting
@@ -268,21 +277,18 @@ class Circle(EnhancedShape):
 class Ellipse(EnhancedShape):
     """An ellipse is defined by x_center, y_center, major_axis, minor_axis, and angle"""
     def __str__( self ):
-        self.store_string()
-        return "{i}{n}({x0},{y0},{r0},{r1},{a0})".format(i=self.include,
-            n=self.shape,x0=self.xx_str[0],y0=self.yy_str[0],r0=self.rad_str[0],r1=self.rad_str[1],a0=self.ang_str[0])
-
-
+        return self.store_string("{i}{n}({x0},{y0},{r0},{r1},{a0})")
+        
+        
     @with_plotting
     def plot(self,engine):
-        engine.plot_ellipse( self.xx[0], self.yy[0], self.rad[0], self.rad[1], self.ang[0]) 
+        engine.plot_ellipse( self.xx[0], self.yy[0], self.rad[0], self.rad[1], self.ang[0])
 
 
 class Field(EnhancedShape):
     """A field is defined to be the entire R^2 dataspace"""
     def __str__( self ):
-        self.store_string()
-        return "{i}{n}()".format( i=self.include, n=self.shape )
+        return self.store_string("{i}{n}()")
 
 
     @with_plotting
@@ -293,22 +299,18 @@ class Field(EnhancedShape):
 class Pie(EnhancedShape):
     """A Pie is defined by x_center, y_center, inner_radius, outer_radius, start_angle, stop_angle"""
     def __str__( self ):
-        self.store_string()
-        return "{i}{n}({x0},{y0},{r0},{r1},{a0},{a1})".format(i=self.include,
-            n=self.shape,x0=self.xx_str[0],y0=self.yy_str[0],r0=self.rad_str[0],r1=self.rad_str[1],a0=self.ang_str[0],a1=self.ang_str[1],)
-
+        return self.store_string("{i}{n}({x0},{y0},{r0},{r1},{a0},{a1})")
+        
 
     @with_plotting
     def plot(self,engine):
-        engine.plot_pie( self.xx[0], self.yy[0], self.rad[0], self.rad[1], self.ang[0], self.ang[1]) 
+        engine.plot_pie( self.xx[0], self.yy[0], self.rad[0], self.rad[1], self.ang[0], self.ang[1])
 
 
 class Point(EnhancedShape):
     """A point is defined by x_center, y_center"""
     def __str__( self ):
-        self.store_string()
-        return "{i}{n}({x0},{y0})".format(i=self.include,
-            n=self.shape,x0=self.xx_str[0],y0=self.yy_str[0])
+        return self.store_string("{i}{n}({x0},{y0})")
 
 
     @with_plotting
@@ -319,9 +321,7 @@ class Point(EnhancedShape):
 class Polygon(EnhancedShape):
     """A Polygon is defined as x1,y1, x2,y2,x3,y3,..."""
     def __str__( self ):
-        self.store_string()
-        xyxy = ",".join([ "{},{}".format(x,y) for x,y in zip( self.xx_str, self.yy_str ) ])
-        return "{i}{n}({xy})".format(i=self.include,n=self.shape,xy=xyxy)
+        return self.store_string("{i}{n}({xy})")
 
 
     @with_plotting
@@ -332,9 +332,7 @@ class Polygon(EnhancedShape):
 class Rectangle(EnhancedShape):
     """A Polygon is defined as lower_left_x,lower_left_y,upper_right_x,upper_right_y"""
     def __str__( self ):
-        self.store_string()
-        return "{i}{n}({x0},{y0},{x1},{y1})".format(i=self.include,
-            n=self.shape,x0=self.xx_str[0],y0=self.yy_str[0],x1=self.xx_str[1],y1=self.yy_str[1])
+        return self.store_string("{i}{n}({x0},{y0},{x1},{y1})")
 
 
     @with_plotting
@@ -345,33 +343,29 @@ class Rectangle(EnhancedShape):
 class Rotbox(EnhancedShape):
     """A Rotbox is defined as x_center, y_center, x_length, y_length, angle """
     def __str__(self):
-        self.store_string()
-        return "{i}{n}({x0},{y0},{r0},{r1},{a0})".format(i=self.include,
-            n=self.shape,x0=self.xx_str[0],y0=self.yy_str[0],r0=self.rad_str[0],r1=self.rad_str[1],a0=self.ang_str[0])
+        return self.store_string("{i}{n}({x0},{y0},{r0},{r1},{a0})")
 
 
     @with_plotting
     def plot(self,engine):
-        engine.plot_box( self.xx[0], self.yy[0], self.rad[0], self.rad[1], self.ang[0]) 
+        engine.plot_box( self.xx[0], self.yy[0], self.rad[0], self.rad[1], self.ang[0])
 
 
 class Sector(EnhancedShape):
     """A Sector is defined by x_center, y_center, start_angle, stop_angle"""
     def __str__( self ):
-        self.store_string()
-        return "{i}{n}({x0},{y0},{a0},{a1})".format(i=self.include,
-            n=self.shape,x0=self.xx_str[0],y0=self.yy_str[0],a0=self.ang_str[0],a1=self.ang_str[1],)
+        return self.store_string("{i}{n}({x0},{y0},{a0},{a1})")
 
 
     @with_plotting
     def plot(self,engine):
-        engine.plot_pie( self.xx[0], self.yy[0], 0.0, 999999.9, self.ang[0], self.ang[1]) 
+        engine.plot_pie( self.xx[0], self.yy[0], 0.0, 999999.9, self.ang[0], self.ang[1])
 
 
 
 class EnhancedRegion( object ):
     """
-    
+
     A region is made up of a collection of EnhancedShapes that are combined
     with AND and OR logical operators.
 
@@ -388,14 +382,14 @@ class EnhancedRegion( object ):
                'rectangle' : Rectangle,
                'rotbox' : Rotbox,
                'sector' : Sector }
-               
+
 
     def __init__( self, ptr  ):
         """
         EnhancedRegion Object
-        
+
         This is not meant to be exposed to user.  It takes in a c_void_p
-        regREGION pointer         
+        regREGION pointer
         """
         self._ptr = ptr
         self.load_shapes()
@@ -411,7 +405,7 @@ class EnhancedRegion( object ):
     def __repr__(self):
         return self.__str__()
 
-                
+
     def load_shapes(self):
         """
         Load the shapes into the region.
@@ -443,11 +437,11 @@ class EnhancedRegion( object ):
 
     def determine_logic(self):
         """Determine the logic used to combine shapes.
-        
-        The same component values are AND'ed together,  Different 
+
+        The same component values are AND'ed together,  Different
         are OR'd.  The standard convention is that the same component values
         are stored together, so we only need to check for when the value
-        changes."""        
+        changes."""
 
         cpt_vals = [s.component for s in self.shapes ]
 
@@ -461,10 +455,10 @@ class EnhancedRegion( object ):
 
 
     def area( self ):
-        """Determine the region area. 
-        
+        """Determine the region area.
+
         TODO: make can pass in field bound box and bin-size parameters.
-        There is also a routine that forces pixelated area we could 
+        There is also a routine that forces pixelated area we could
         optionally call
         """
         import sys as sys
@@ -476,10 +470,10 @@ class EnhancedRegion( object ):
     def write(self, filename):
         """
         Write the region to an ascii file.  Filename is always clobbered!
-        
+
         TODO: optionally replace _OR_ with "\n"
-        
-        TODO: Write as FITS file.  Only hard thing is the NaN-pad the 
+
+        TODO: Write as FITS file.  Only hard thing is the NaN-pad the
         arrays to max size.
         """
         with open(filename, "w") as fp:
@@ -522,7 +516,7 @@ class EnhancedRegion( object ):
         """
         if not isinstance( other, EnhancedRegion):
             raise NotImplementedError("Cannot perform region logic with {} type".format(type(other)) )
-            
+
         cpts = self._ptr
         cpto = other._ptr
         return EnhancedRegion( region_lib.regUnionRegion( cpts, cpto ) )
@@ -552,11 +546,11 @@ class EnhancedRegion( object ):
         cpto = other._ptr
         invrt = region_lib.regInvert( cpto )
         return EnhancedRegion( region_lib.regIntersectRegion( cpts, invrt ) )
-        
+
 
     def __copy__(self):
         return EnhancedRegion( region_lib.regCopyRegion( self._ptr))
-        
+
 
     def __eq__(self, other):
         if not isinstance( other, EnhancedRegion):
@@ -568,17 +562,17 @@ class EnhancedRegion( object ):
     def tweak( self, dx=0, dy=0, stretch=1, rotate=0 ):
         """
         Create a copy of the current region, shape-by-shape.
-        
+
         Then apply tweaks to the x, y, r, angle parameters before
         creating and returning a new region.
-        
+
         Each tweak is applied to each shape separately
         """
         copy_ptr = region_lib.regCreateEmptyRegion()
         for ii in range( len(self.shapes) ):
             shape = self.shapes[ii]
 
-            reg_math = c_int(0) if _AND_ == self.logic[ii] else c_int(1)        
+            reg_math = c_int(0) if _AND_ == self.logic[ii] else c_int(1)
             reg_inc = c_int(0) if _NOT_ == shape.include else c_int(1)
 
             copy_xx = [ x+dx for x in shape.xx]
@@ -596,7 +590,7 @@ class EnhancedRegion( object ):
                                 wrap_vals( copy_aa ),
                                 c_int(0), c_int(0) )
         return EnhancedRegion(copy_ptr)
-                
+
 
 def SimpleGeometricShapes( name_as_string, xx, yy, radius, angle ):
     """
@@ -618,7 +612,7 @@ def SimpleGeometricShapes( name_as_string, xx, yy, radius, angle ):
     return EnhancedRegion(new_ptr)
 
 # ------------------
-# User Interface 
+# User Interface
 
 def circle( x, y, r ):
     """circle( x_center, y_center, radius )"""
@@ -627,18 +621,27 @@ def circle( x, y, r ):
 
 def ellipse( x, y, major, minor, angle=0 ):
     """ellipse( x_center, y_center, semi_major_axis, semi_minor_axis[, rotation_angle])
-    
+
     angle is measured in degrees from the +X axis
-    """    
+    """
     return SimpleGeometricShapes( "ellipse", [x], [y], [major, minor], [angle] )
 
 
 def box( x,y, xlen, ylen, angle=0 ):
     """box( x_center, y_center, x_length, y_length[, rotation_angle])
-    
+
     angle is measured in degrees from the +X axis
     """
     return SimpleGeometricShapes( "rotbox", [x], [y], [xlen, ylen], [angle] )
+
+
+def rotbox( x,y, xlen, ylen, angle=0 ):
+    """box( x_center, y_center, x_length, y_length[, rotation_angle])
+
+    angle is measured in degrees from the +X axis
+    """
+    return SimpleGeometricShapes( "rotbox", [x], [y], [xlen, ylen], [angle] )
+
 
 
 def annulus( x, y, inner, outer ):
@@ -653,7 +656,7 @@ def field():
 
 def pie( x, y, inner, outer, start, stop ):
     """pie( x_center, y_center, inner_radius, outer_radius, start_angle, stop_angle )
-    
+
     angles are measured in degrees from the +X axis
     """
     return SimpleGeometricShapes( "pie", [x], [y], [inner, outer], [start, stop] )
@@ -671,7 +674,7 @@ def rectangle(llx, lly, urx, ury ):
 
 def sector( x, y, start, stop ):
     """sector( x_center, y_center, start_angle, stop_angle
-    
+
     angles are measured in degrees from +X axis
     """
     return SimpleGeometricShapes( "sector", [x], [y], [], [start, stop] )
@@ -679,12 +682,22 @@ def sector( x, y, start, stop ):
 
 def polygon( *args ):
     """polygon(x1,y1,x2,y2,x3,y3,...)
+    or
+    polygon( x_array, y_array ) 
+    
     
     Must contain at least 3 points, and same number of x-y pairs.
     An extra point is added if last point is not equal to 1st point.
+
     """
-    x = [args[i] for i in range(0,len(args),2) ]
-    y = [args[i] for i in range(1,len(args),2) ]
+
+    if len(args) == 2:
+        x = args[0]
+        y = args[1]
+    else:
+        x = [args[i] for i in range(0,len(args),2) ]
+        y = [args[i] for i in range(1,len(args),2) ]
+
     if (len(x) != len(y)):
         raise RuntimeError("must have equal number of x,y pairs")
     if (len(x)<3):
@@ -692,23 +705,12 @@ def polygon( *args ):
     return SimpleGeometricShapes( "polygon", x, y, [], [] )
 
 
-def polygon_vec( x, y ):
-    """polygon( x_values, y_values )
-    
-    Must contain at least 3 points, and same number of x-y pairs.
-    An extra point is added if last point is not equal to 1st point.
-    """    
-    if (len(x) != len(y)):
-        raise RuntimeError("must have equal number of x,y pairs")
-    if (len(x)<3):
-        raise RuntimeError("must have at least 3 points to make a polygon")
-    return SimpleGeometricShapes( "polygon", x, y, [], [] )
 
 
 def region( filename ):
     """region(filename)
-    
-    Load regions from file    
+
+    Load regions from file
     """
 
     retval = None
@@ -721,7 +723,7 @@ def region( filename ):
         try:
             retval = cxcdm_lib.dmRegParse( "region({})".format(str(filename)) )
             if not retval:
-                raise 
+                raise
             return EnhancedRegion(retval)
         except:
             raise IOError("Cannot parse region file")
@@ -755,13 +757,153 @@ bpanda(4686.4929,3384.499,3.4160865e-09,359.9995,2,71.998,105.998,143.996,211.99
 """
 
 
+def ds9_annulus( *args ):
+    """
+    annulus(3938.5052,4158.5084,0,31.085122,62.170244,93.255366,124.34049,155.42561)
+        : annulus( x, y, r0, r1, r2, r3, ... rN)
+    """
+
+    if (len(args)<4):
+        raise RuntimeError( "not engough parameters" )
+
+    xx = args[0]
+    yy = args[1]
+    retval = []
+    for i in range( 3, len(args),1 ):
+        retval.append( annulus( xx, yy, args[i-1], args[i] ) )
+
+    return retval
 
 
+def ds9_ellipse( *args ):
+    """
+    ellipse(4270.4871,4030.506,0,0,36,25.999999,72,51.999999,108,77.999998,144,104,42.150903)
+      : ellipse( x, y, m0, n0, m1, n1, m2, n2, ... , mN, nN, angle)
+    """
+
+    if (len(args)<5):
+        raise RuntimeError( "not engough parameters" )
+
+    xx = args[0]
+    yy = args[1]
+    angle = args[-1] # Last value is angle
+
+    retval = []
+    for i in range( 4, len(args)-1, 2 ):
+        inner = ellipse( xx, yy, args[i-2], args[i-1], angle )
+        outer = ellipse( xx, yy, args[i], args[i+1], angle )
+        retval.append( outer-inner )
+
+    return retval
 
 
+def ds9_box( *args ):
+    """
+    box(4656.5148,4106.5044,0,0,62.664,74.664,125.328,149.328,187.992,223.992,44.993503)
+       : box( x, y, m0, n0, m1, n1, m2, n2, ... , mN, nN, angle)
+
+    """
+    if (len(args)<5):
+        raise RuntimeError( "not engough parameters" )
+
+    xx = args[0]
+    yy = args[1]
+    angle = args[-1] # Last value is angle
+
+    retval = []
+    for i in range( 4, len(args)-1, 2 ):
+        inner = box( xx, yy, args[i-2], args[i-1], angle )
+        outer = box( xx, yy, args[i], args[i+1], angle )
+        retval.append( outer-inner )
+
+    return retval
 
 
+def ds9_panda( xx, yy, start_angle, stop_angle, num_angle, inner, outer, num_rad):
+    """
+    panda(3874.5018,3550.4989,3.4160865e-09,359.9995,4,73.913415,147.82683,2)
+       : panda( x, y, angle_min, angle_max, #angle, rmin, rmax, #rad)
+    """
+
+    if start_angle > stop_angle:
+        stop_angle = stop_angle + 360
+
+    da = (stop_angle-start_angle)/float(num_angle)
+
+    dr = (outer-inner)/float(num_rad)
+    
+    retval = []
+    for aa in range( num_angle ):        
+        ss = sector( xx, yy, start_angle+(aa*da), start_angle+((aa+1)*da) )
+        for rr in range( num_rad ):
+            anl = annulus( xx, yy, inner+(rr*dr), inner+((rr+1)*dr) )
+            retval.append( anl*ss )
+
+    return retval
+
+
+def ds9_epanda( xx, yy, start_angle, stop_angle, num_angle, mjr_inner, mnr_inner, mjr_outer, mnr_outer, num_rad, ang):
+    """
+    epanda(4222.4993,3518.4984,3.4160865e-09,359.9995,3,0,0,120,196,6,3.4160865e-09)
+       : epanda( x, y, angle_min, angle_max, #angle, rmin_major, rmin_minr, rmax_maj, rmax_min, #rad, angle)
+    """
+    if start_angle > stop_angle:
+        stop_angle = stop_angle + 360
+
+    da = (stop_angle-start_angle)/float(num_angle)
+    dm = (mjr_outer-mjr_inner)/float(num_rad)
+    dj = (mnr_outer-mnr_inner)/float(num_rad)
+    
+    retval = []
+    for aa in range( num_angle ):        
+        ss = sector( xx, yy, start_angle+(aa*da), start_angle+((aa+1)*da) )
+        for rr in range( num_rad ):
+            inner = ellipse( xx, yy, mjr_inner+(rr*dm), mnr_inner+(rr*dj), ang )
+            outer = ellipse( xx, yy, mjr_inner+((rr+1)*dm), mnr_inner+((rr+1)*dj), ang )
+            retval.append( (outer-inner)*ss)
+    
+    return retval
+    
+
+def ds9_bpanda( xx, yy, start_angle, stop_angle, num_angle, mjr_inner, mnr_inner, mjr_outer, mnr_outer, num_rad, ang):
+    """
+    bpanda(4686.4929,3384.499,3.4160865e-09,359.9995,2,71.998,105.998,143.996,211.996,2,29.993503)
+        : bpanda( x, y, angle_min, angle_max, #angle, rmin_major, rmin_minr, rmax_maj, rmax_min, #rad, angle)
+    """
+    if start_angle > stop_angle:
+        stop_angle = stop_angle + 360
+
+    da = (stop_angle-start_angle)/float(num_angle)
+    dm = (mjr_outer-mjr_inner)/float(num_rad)
+    dj = (mnr_outer-mnr_inner)/float(num_rad)
+    
+    retval = []
+    for aa in range( num_angle ):        
+        ss = sector( xx, yy, start_angle+(aa*da), start_angle+((aa+1)*da) )
+        for rr in range( num_rad ):
+            inner = box( xx, yy, mjr_inner+(rr*dm), mnr_inner+(rr*dj), ang )
+            outer = box( xx, yy, mjr_inner+((rr+1)*dm), mnr_inner+((rr+1)*dj), ang )
+            retval.append( (outer-inner)*ss)
+    
+    return retval
+    
+
+    
 def test():
+    print annulus(1,2,3,4)
+    print box(1,2,3,4)
+    print box(1,2,3,4,5)
+    print circle(1,2,3)
+    print ellipse(1,2,3,4,5)
+    print ellipse(1,2,3,4)
+    print field()
+    print pie(1,2,3,4,5,6)
+    print point(1,2)
+    print polygon( 1,2,3,4,5,6)
+    print polygon( [1,2,3],[4,5,6])
+    print rectangle(1,2,3,4)
+    print rotbox(1,2,3,4,5)
+    print sector(1,2,3,4)
 
     print circle(10,10,+123)+box(10,10,1,1)
     print circle(10,10,100)*box(10,10,1,1)
@@ -774,7 +916,7 @@ def test():
     cc = region("/lenin2.real/Test/4.8b1/Regression/ciao4.8b1_linux64/dmcontour/04/dmcontour_4.fits")
     #print cc
     #cc.write("cntr.reg")
-    
+
     a = pie(0,0, 1, 2, -45, 56)
     d = pie(0,0, 1, 2, -45, 56)
     b = a.__copy__()
@@ -784,8 +926,8 @@ def test():
     print a == b
     print a == d
     print a == cc
-    
-    p = a+z+bb 
+
+    p = a+z+bb
     q = p.tweak(dx=5).tweak(stretch=5).tweak(rotate=+45)
     print p
     print q
