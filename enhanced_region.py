@@ -49,7 +49,7 @@ circle(1000,1000,50)*!box(1010,1010,50,100)
 """
 
 
-__all__ = [ 'annulus', 'box', 'circle', 'ellipse', 'field', 'pie', 'point', 'polygon', 'region', 'rectangle', 'sector' ]
+__all__ = [ 'annulus', 'box', 'circle', 'ellipse', 'field', 'pie', 'point', 'polygon', 'region', 'rectangle', 'sector', 'dss' ]
 
 
 _AND_ = "*"
@@ -727,6 +727,34 @@ def region( filename ):
             return EnhancedRegion(retval)
         except:
             raise IOError("Cannot parse region file")
+
+
+
+cxcdm_lib.dmBlockOpen.restype = c_void_p
+cxcdm_lib.dmSubspaceColOpen.restype = c_void_p
+cxcdm_lib.dmSubspaceColGetRegion.restype = c_void_p
+cxcdm_lib.dmBlockGetDataset.restype = c_void_p
+
+def dss( filename, colname="sky", component=1 ):
+    """Okay, this is treading on thin ice ... but I know it gives
+    me a regRegion *ptr """
+    
+    retval = None
+    
+    blk = cxcdm_lib.dmBlockOpen( None, filename )
+    if 0 == blk:
+        raise IOError("Unable to open file '{}'".format(filename))
+
+    cxcdm_lib.dmBlockSetSubspaceCpt( blk, c_long( component ) )
+    col = cxcdm_lib.dmSubspaceColOpen( c_void_p( blk), colname )
+    ptr = cxcdm_lib.dmSubspaceColGetRegion( col )     
+
+    retval = EnhancedRegion( ptr )
+    ds = cxcdm_lib.dmBlockGetDataset( blk )
+    cxcdm_lib.dmBlockClose( blk )
+    cxcdm_lib.dmDatasetClose( ds )
+    return retval
+    
 
 #
 #
