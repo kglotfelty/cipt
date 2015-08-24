@@ -625,12 +625,12 @@ def circle( x, y, r ):
     return SimpleGeometricShapes( "circle", [x], [y], [r], [] )
 
 
-def ellipse( x, y, xlen, ylen, angle=0 ):
-    """ellipse( x_center, y_center, major_axis, minor_axis[, rotation_angle])
+def ellipse( x, y, major, minor, angle=0 ):
+    """ellipse( x_center, y_center, semi_major_axis, semi_minor_axis[, rotation_angle])
     
     angle is measured in degrees from the +X axis
     """    
-    return SimpleGeometricShapes( "ellipse", [x], [y], [xlen, ylen], [angle] )
+    return SimpleGeometricShapes( "ellipse", [x], [y], [major, minor], [angle] )
 
 
 def box( x,y, xlen, ylen, angle=0 ):
@@ -713,13 +713,15 @@ def region( filename ):
 
     retval = None
     try:
-        retval = cxcdm_lib.dmRegParse( filename )
+        retval = cxcdm_lib.dmRegParse( str(filename) )
         if not retval:
             raise IOError("try with a region()")
         return EnhancedRegion(retval)
-    except:
+    except Exception, E:
         try:
-            retval = cxcdm_lib.dmRegParse( "region({})".format(filename) )
+            retval = cxcdm_lib.dmRegParse( "region({})".format(str(filename)) )
+            if not retval:
+                raise 
             return EnhancedRegion(retval)
         except:
             raise IOError("Cannot parse region file")
@@ -729,6 +731,35 @@ def region( filename ):
 #
 #
 #
+
+"""
+
+annulus(3938.5052,4158.5084,0,31.085122,62.170244,93.255366,124.34049,155.42561)
+   : annulus( x, y, r0, r1, r2, r3, ... rN)
+
+ellipse(4270.4871,4030.506,0,0,36,25.999999,72,51.999999,108,77.999998,144,104,42.150903)
+   : ellipse( x, y, m0, n0, m1, n1, m2, n2, ... , mN, nN, angle)
+
+box(4656.5148,4106.5044,0,0,62.664,74.664,125.328,149.328,187.992,223.992,44.993503)
+   : box( x, y, m0, n0, m1, n1, m2, n2, ... , mN, nN, angle)
+
+panda(3874.5018,3550.4989,3.4160865e-09,359.9995,4,73.913415,147.82683,2)
+   : panda( x, y, angle_min, angle_max, #angle, rmin, rmax, #rad)
+
+epanda(4222.4993,3518.4984,3.4160865e-09,359.9995,3,0,0,120,196,6,3.4160865e-09)
+   : epanda( x, y, angle_min, angle_max, #angle, rmin_major, rmin_minr, rmax_maj, rmax_min, #rad, angle)
+
+bpanda(4686.4929,3384.499,3.4160865e-09,359.9995,2,71.998,105.998,143.996,211.996,2,29.993503)
+   : bpanda( x, y, angle_min, angle_max, #angle, rmin_major, rmin_minr, rmax_maj, rmax_min, #rad, angle)
+
+"""
+
+
+
+
+
+
+
 
 def test():
 
