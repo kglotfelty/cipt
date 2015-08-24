@@ -61,35 +61,35 @@ _BLANK_ = ""
 
 from ctypes import *
 try:
-    dll = cdll.LoadLibrary('libregion.so')
-    dml = cdll.LoadLibrary('libascdm.so')
+    region_lib = cdll.LoadLibrary('libregion.so')
+    cxcdm_lib = cdll.LoadLibrary('libascdm.so')
 except:
     try: # OSX
-        dll = cdll.LoadLibrary('libregion.dylib')
-        dml = cdll.LoadLibrary('libascdm.dylib')
+        region_lib = cdll.LoadLibrary('libregion.dylib')
+        cxcdm_lib = cdll.LoadLibrary('libascdm.dylib')
     except:
         raise ImportError("Cannot load region library")
 
 
 # Set return types.  Probably don't need void's, int's, and long's, but
 # do it anyway for completeness
-dll.regArea.restype = c_double
-dll.regCreateEmptyRegion.restype = c_void_p
-dll.regInsideRegion.restype = c_int
-dll.regUnionRegion.restype = c_void_p
-dll.regIntersectRegion.restype = c_void_p
-dll.regInvert.restype = c_void_p
-dll.regGetNoShapes.restype = c_long
-dll.regGetShapeNo.restype = c_void_p
-dll.regShapeRadii.restype = c_long
-dll.regShapeAngles.restype = c_long
-dll.regShapeGetName.restype = c_int
-dll.regShapeGetNoPoints.restype = c_long
-dll.regShapeGetComponent.restype = c_long
-dll.regShapeGetPoints.restype = c_long # unused
-dll.regShapeGetAngles.restype = c_long # unused
-dll.regShapeGetRadii.restype = c_long # unused
-dml.dmRegParse.restype = c_void_p
+region_lib.regArea.restype = c_double
+region_lib.regCreateEmptyRegion.restype = c_void_p
+region_lib.regInsideRegion.restype = c_int
+region_lib.regUnionRegion.restype = c_void_p
+region_lib.regIntersectRegion.restype = c_void_p
+region_lib.regInvert.restype = c_void_p
+region_lib.regGetNoShapes.restype = c_long
+region_lib.regGetShapeNo.restype = c_void_p
+region_lib.regShapeRadii.restype = c_long
+region_lib.regShapeAngles.restype = c_long
+region_lib.regShapeGetName.restype = c_int
+region_lib.regShapeGetNoPoints.restype = c_long
+region_lib.regShapeGetComponent.restype = c_long
+region_lib.regShapeGetPoints.restype = c_long # unused
+region_lib.regShapeGetAngles.restype = c_long # unused
+region_lib.regShapeGetRadii.restype = c_long # unused
+cxcdm_lib.dmRegParse.restype = c_void_p
 
 
 
@@ -153,7 +153,7 @@ class EnhancedShape( object ):
         or exclusive.
         """
         shape_name = create_string_buffer(100)
-        iflag = dll.regShapeGetName(self._ptr, shape_name, 99)
+        iflag = region_lib.regShapeGetName(self._ptr, shape_name, 99)
         self.shape = shape_name.value.lower()
         self.include = _NOT_ if 0 == iflag else _BLANK_
 
@@ -166,10 +166,10 @@ class EnhancedShape( object ):
         TODO: wrap w/ a setter that does the string conversion so that
         if class is exposed then string is kept in sync with double values
         """
-        npts = dll.regShapeGetNoPoints( self._ptr )
+        npts = region_lib.regShapeGetNoPoints( self._ptr )
         ox = (c_double * npts)()
         oy = (c_double * npts)()
-        dll.regShapeGetPoints( self._ptr, byref(ox), byref(oy), c_long( npts ))
+        region_lib.regShapeGetPoints( self._ptr, byref(ox), byref(oy), c_long( npts ))
         self.xx = [x for x in ox]
         self.yy = [y for y in oy]
 
@@ -180,9 +180,9 @@ class EnhancedShape( object ):
         
         Also stores the string version (see TODO above)
         """
-        nrad = dll.regShapeRadii( self._ptr )
+        nrad = region_lib.regShapeRadii( self._ptr )
         outr = (c_double * nrad)()
-        dll.regShapeGetRadii( self._ptr, byref(outr) )
+        region_lib.regShapeGetRadii( self._ptr, byref(outr) )
         self.rad = [r for r in outr]
     
 
@@ -192,9 +192,9 @@ class EnhancedShape( object ):
         
         Also stores the string version (see TODO above)
         """
-        nang = dll.regShapeAngles( self._ptr )
+        nang = region_lib.regShapeAngles( self._ptr )
         oa = (c_double*nang)()
-        dll.regShapeGetAngles( self._ptr, byref(oa))
+        region_lib.regShapeGetAngles( self._ptr, byref(oa))
         self.ang = [ a for a in oa ]
 
 
@@ -204,7 +204,7 @@ class EnhancedShape( object ):
         the shapes with the component value are grouped together and AND'ed.
         Diff components are OR'ed.
         """
-        self.component = dll.regShapeGetComponent( self._ptr )
+        self.component = region_lib.regShapeGetComponent( self._ptr )
 
 
     def store_string(self):
@@ -399,7 +399,7 @@ class EnhancedRegion( object ):
         """
         self._ptr = ptr
         self.load_shapes()
-        self.dll = dll # keep a ref to this so it can be used to free shapes during garbage collection
+        self.region_lib = region_lib # keep a ref to this so it can be used to free shapes during garbage collection
 
 
     def __str__( self ):
@@ -424,16 +424,16 @@ class EnhancedRegion( object ):
     def get_shape_name( shape_ptr):
         """Get the name of a shape"""
         shape_name = create_string_buffer(100)
-        dll.regShapeGetName(shape_ptr, shape_name, 99)
+        region_lib.regShapeGetName(shape_ptr, shape_name, 99)
         return shape_name.value.lower()
 
 
     def classify_shapes( self ):
         """Create the correct EnhancedShape derived class based on the shape's name."""
-        nshapes = dll.regGetNoShapes( self._ptr )
+        nshapes = region_lib.regGetNoShapes( self._ptr )
         self.shapes = []
         for i in range(1,nshapes+1):
-            shape_ptr = dll.regGetShapeNo( self._ptr, c_long(i) )
+            shape_ptr = region_lib.regGetShapeNo( self._ptr, c_long(i) )
             shape_name = self.get_shape_name( shape_ptr)
             if shape_name in self.shape_classes:
                 self.shapes.append( self.shape_classes[shape_name](shape_ptr) )
@@ -470,7 +470,7 @@ class EnhancedRegion( object ):
         import sys as sys
         DBL_MAX = sys.float_info.max
         fld = wrap_vals( [-DBL_MAX, DBL_MAX] )
-        return dll.regArea( self._ptr, fld, fld, c_double(1.0) )
+        return region_lib.regArea( self._ptr, fld, fld, c_double(1.0) )
 
 
     def write(self, filename):
@@ -491,7 +491,7 @@ class EnhancedRegion( object ):
         """
         Determine if x,y pair is inside the region
         """
-        return (1 == dll.regInsideRegion(self._ptr, c_double(x), c_double(y)))
+        return (1 == region_lib.regInsideRegion(self._ptr, c_double(x), c_double(y)))
 
 
     def plot( self ):
@@ -513,7 +513,7 @@ class EnhancedRegion( object ):
         """
         Use the self.dll which should exist during garbage collection.
         """
-        self.dll.regFree( self._ptr )
+        self.region_lib.regFree( self._ptr )
 
 
     def __add__(self,other):
@@ -525,7 +525,7 @@ class EnhancedRegion( object ):
             
         cpts = self._ptr
         cpto = other._ptr
-        return EnhancedRegion( dll.regUnionRegion( cpts, cpto ) )
+        return EnhancedRegion( region_lib.regUnionRegion( cpts, cpto ) )
 
 
     def __mul__(self,other):
@@ -537,7 +537,7 @@ class EnhancedRegion( object ):
 
         cpts = self._ptr
         cpto = other._ptr
-        return EnhancedRegion( dll.regIntersectRegion( cpts, cpto ) )
+        return EnhancedRegion( region_lib.regIntersectRegion( cpts, cpto ) )
 
 
     def __sub__(self,other):
@@ -550,19 +550,19 @@ class EnhancedRegion( object ):
 
         cpts = self._ptr
         cpto = other._ptr
-        invrt = dll.regInvert( cpto )
-        return EnhancedRegion( dll.regIntersectRegion( cpts, invrt ) )
+        invrt = region_lib.regInvert( cpto )
+        return EnhancedRegion( region_lib.regIntersectRegion( cpts, invrt ) )
         
 
     def __copy__(self):
-        return EnhancedRegion( dll.regCopyRegion( self._ptr))
+        return EnhancedRegion( region_lib.regCopyRegion( self._ptr))
         
 
     def __eq__(self, other):
         if not isinstance( other, EnhancedRegion):
             raise NotImplementedError("Cannot perform region logic with {} type".format(type(other)) )
 
-        return dll.regCompareRegion(self._ptr, other._ptr)
+        return region_lib.regCompareRegion(self._ptr, other._ptr)
 
 
     def tweak( self, dx=0, dy=0, stretch=1, rotate=0 ):
@@ -574,7 +574,7 @@ class EnhancedRegion( object ):
         
         Each tweak is applied to each shape separately
         """
-        copy_ptr = dll.regCreateEmptyRegion()
+        copy_ptr = region_lib.regCreateEmptyRegion()
         for ii in range( len(self.shapes) ):
             shape = self.shapes[ii]
 
@@ -586,7 +586,7 @@ class EnhancedRegion( object ):
             copy_rr = [ r*stretch for r in shape.rad]
             copy_aa = [ a+rotate for a in shape.ang ]
 
-            dll.regAppendShape( copy_ptr,
+            region_lib.regAppendShape( copy_ptr,
                                 shape.shape,
                                 reg_inc, reg_math,
                                 wrap_vals( copy_xx ),
@@ -602,8 +602,8 @@ def SimpleGeometricShapes( name_as_string, xx, yy, radius, angle ):
     """
     For single shape regions crated with the routines below
     """
-    new_ptr = dll.regCreateEmptyRegion()
-    dll.regAppendShape( new_ptr,
+    new_ptr = region_lib.regCreateEmptyRegion()
+    region_lib.regAppendShape( new_ptr,
                         name_as_string ,
                         c_int(1), c_int(1),
                         wrap_vals(xx),
@@ -612,7 +612,7 @@ def SimpleGeometricShapes( name_as_string, xx, yy, radius, angle ):
                         wrap_vals( radius ),
                         wrap_vals( angle ),
                         c_int(0), c_int(0) )
-    if 0 == dll.regGetNoShapes( new_ptr ):
+    if 0 == region_lib.regGetNoShapes( new_ptr ):
         raise RuntimeError("Bad region parameters")
 
     return EnhancedRegion(new_ptr)
@@ -713,17 +713,22 @@ def region( filename ):
 
     retval = None
     try:
-        retval = dml.dmRegParse( filename )
+        retval = cxcdm_lib.dmRegParse( filename )
         if not retval:
             raise IOError("try with a region()")
         return EnhancedRegion(retval)
     except:
         try:
-            retval = dml.dmRegParse( "region({})".format(filename) )
+            retval = cxcdm_lib.dmRegParse( "region({})".format(filename) )
             return EnhancedRegion(retval)
         except:
             raise IOError("Cannot parse region file")
 
+#
+#
+#
+#
+#
 
 def test():
 
