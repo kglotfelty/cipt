@@ -68,12 +68,12 @@ def add_region( xx, yy, style, delta=0 ):
 
     import pychips as chips
     
-    if delta > 2:
+    if delta > 4:
         raise RuntimeError("Problem plotting shape")
 
     try:
         chips.add_region( xx,yy, style)
-    except:
+    except Exception, e:
         delta = delta + 0.1
         xp, yp = simplify_polygon( xx, yy, delta=delta)
         add_region( xp, yp, style, delta=delta )
@@ -244,7 +244,7 @@ def plot_polygon( xvals, yvals, style=""):
     >>> y = [i[1] for i in plus]    
     >>> plot_polygon(x,y, 'fill.color=firebrick')
 
-    """
+    """    
     add_region(xvals, yvals, style)
 
     

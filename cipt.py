@@ -10,10 +10,10 @@ __all__ = [ "CIAOImage" ]
 
 from crateify import Crateify
 from smooth_kernels import *
-from filter_mask import *
+from enhanced_region import *
 from history_crate import *
 from ciao_contrib.runtool import make_tool
-
+import numpy as np
 
 
 
@@ -237,152 +237,135 @@ class CIAOImage( HistoryIMAGECrate ):
         3x3 pixel around the current pixel location are inspected and
         the miniumum value of those 9 pixel values is returned.
 
-        : min(FilterMask) : find minimum pixel value of those in masked region 
+        : min(EnhancedRegion) : find minimum pixel value of those in masked region 
 
-        : max(FilterMask) : find maximum pixel value of those in masked region 
+        : max(EnhancedRegion) : find maximum pixel value of those in masked region 
 
-        : mean(FilterMask) : find mean pixel value of those in masked region 
+        : mean(EnhancedRegion) : find mean pixel value of those in masked region 
 
-        : median(FilterMask) : find median(*) pixel value of those in 
+        : median(EnhancedRegion) : find median(*) pixel value of those in 
                               masked region 
 
-        : mode(FilterMask) : 3 * median() - 2*mean().  A measure of how 
+        : mode(EnhancedRegion) : 3 * median() - 2*mean().  A measure of how 
                             skewed the pixel values are
 
-        : nmode(FilterMask) : Normalized mode, ie mode()/mean().
+        : nmode(EnhancedRegion) : Normalized mode, ie mode()/mean().
         
-        : mid(FilterMask) : The value mid way between the min and max
+        : mid(EnhancedRegion) : The value mid way between the min and max
 
-        : sigma(FilterMask) : The standard deviation of the pixel values in 
+        : sigma(EnhancedRegion) : The standard deviation of the pixel values in 
                             the mask
 
-        : extreme(FilterMask) : If the mean is closer to min value, use the 
+        : extreme(EnhancedRegion) : If the mean is closer to min value, use the 
                             min; otherwise use the max.
 
-        : locheq(FilterMask) : local histogram equalization.  The center 
+        : locheq(EnhancedRegion) : local histogram equalization.  The center 
                             pixel (0,0) is scaled based on the distribution 
                             of pixels in the masked region.
 
-        : kuwahara(FilterMaskd) : An edge preserving smoothing.  The mask is 
+        : kuwahara(EnhancedRegiond) : An edge preserving smoothing.  The mask is 
                             divided into quadrants.  The mean value in
                             the quadrant with the smallest standard deviation
                             is used.
 
-        : unsharp(FilterMask): center pixel minus the mean of the pixels in the mask.
+        : unsharp(EnhancedRegion): center pixel minus the mean of the pixels in the mask.
 
-        : range(FilterMask) : The range of pixel values (max-min).
+        : range(EnhancedRegion) : The range of pixel values (max-min).
 
-        : variance(FilterMask) : The variance of the pixel values compared to the
+        : variance(EnhancedRegion) : The variance of the pixel values compared to the
                             center pixel
 
-        : q25(FilterMask) : 25% of the pixels in the mask are below this value.
+        : q25(EnhancedRegion) : 25% of the pixels in the mask are below this value.
 
-        : q33(FilterMask) : 33% of the pixels in the mask are below this value.
+        : q33(EnhancedRegion) : 33% of the pixels in the mask are below this value.
 
-        : q67(FilterMask) : 67% of the pixels in the mask are below this value.
+        : q67(EnhancedRegion) : 67% of the pixels in the mask are below this value.
 
-        : q75(FilterMask) : 75% of the pixels in the mask are below this value.
+        : q75(EnhancedRegion) : 75% of the pixels in the mask are below this value.
 
-        : mcv(FilterMask) : most common value.  A coarse histogram of the pixel
+        : mcv(EnhancedRegion) : most common value.  A coarse histogram of the pixel
                         values is created and the location of the peak is returned.
 
-        : sum(FilterMask) : sum of the values in the mask
+        : sum(EnhancedRegion) : sum of the values in the mask
 
-        : rclip(FilterMask) : If the center pixel value is less than the min 
+        : rclip(EnhancedRegion) : If the center pixel value is less than the min 
                         pixel in the mask, replace with the min value. If it is 
                         greater than the max, replace with the max. Otherwise, 
-                        use original value.  This should be used with FilterMasks
+                        use original value.  This should be used with EnhancedRegions
                         that exclude the center pixel (eg Annulus)
 
-        : peak(FilterMask) : If the center pixel is the max value of the pixels
+        : peak(EnhancedRegion) : If the center pixel is the max value of the pixels
                         in the mask return it.  Otherwise return NaN.  Used
                         to identify local maximums.
 
-        : valley(FilterMask) : If the center pixel is the min value of he pixels
+        : valley(EnhancedRegion) : If the center pixel is the min value of he pixels
                         in the mask return it.  Otherwise return NaN.  Used
                         to identify local minimum.
 
-        : count(FilterMask) : Count the number of valid pixels in the mask.
+        : count(EnhancedRegion) : Count the number of valid pixels in the mask.
                         Different at the edge of image and at/around
                         any NaN values.
 
-        : olympic(FilterMask) : Same as mean() except the lowest and
+        : olympic(EnhancedRegion) : Same as mean() except the lowest and
                         largest values are excluded.
 
-        : pmean(FilterMask) : Poisson mean computed as (#Pixels with 
+        : pmean(EnhancedRegion) : Poisson mean computed as (#Pixels with 
                         value = 0 or 1 divided by #Pixels with value = 
                         0 ) minus 1. If #pixels_0 is 0 then use median.
                         Should only be used for integer images
 
-        : mu3(FilterMask) : The 3rd moment of the pixel values
+        : mu3(EnhancedRegion) : The 3rd moment of the pixel values
 
-        : mu4(FilterMask) : The 4th moment of the pixel values 
+        : mu4(EnhancedRegion) : The 4th moment of the pixel values 
  
-        : jitter(FilterMask) : Randomly select one of the pixel values in the
+        : jitter(EnhancedRegion) : Randomly select one of the pixel values in the
                         mask
 
-        : rms(FilterMask) : The root-mean-square
+        : rms(EnhancedRegion) : The root-mean-square
 
-        : nslope(FilterMask) : The minimum difference between pixel values
+        : nslope(EnhancedRegion) : The minimum difference between pixel values
                         in the mask.
 
-        : sig3mean(FilterMask) : The mean, after 5 iterations where data 
+        : sig3mean(EnhancedRegion) : The mean, after 5 iterations where data 
                         outside +/-3 sigma are excluded
 
-        : sig3median(FilterMask) : The median after 5 iterations where data 
+        : sig3median(EnhancedRegion) : The median after 5 iterations where data 
                         outside +/-3 sigma are excluded
+
+        The EnahncedRegion's are any of the standard CIAO regions:
+        
+            annulus(x,y,r0,r1)
+            box(x,y,xlen,ylen)
+            circle(x,y,r)
+            ellipse(x,y,semi-major, semi-minor, angle)
+            field()
+            pie(x,y,inner_radius, outer_radius, start_angle, stop_angle)
+            point(x,y)
+            polygon( x1, y1, x2, y2, x3,y3,...)
+            polygon_vec( xvals, yvals )
+            rectangle( lower_left_x, lower_left_y, upper_right_x, upper_right_y)
+            rotbox( x,y,xlen, ylen, angle)
+            sector( x, y, start_angle, stop_angle)
+            region(filename)
+
+        For the non-linear filters, the regions should be defined around 
+        (0,0); they are shifted to the center of each pixel to create the
+        output.
+        
+        Individual shapes and regions can be combined with "+" (union)
+        , "*" (intersection), and "-" which is short hand for "*!" 
+        (intersection with the inverted region)
 
         Examples:
         
-        >>> img.min(Box(3))
-        >>> img.smooth(Gaussian(3)).rclip(Annulus(20,22))
-        >>> img.median( Box(10,10)-Circle(3) )
+        >>> img.min(box(0,0,3,3))
+        >>> img.gaus(3).rclip(annulus(0,0,20,22))
+        >>> img.median( box(0,0,10,10)-circle(0,0,3) )
         
         (*) The quantile based algorithms use a slightly modified definition.
         If the number of points is even, rather than compute the 
         average of the two value, the lower value is returned.
 
-        The filters can be defined using the following objects
-        
-          : Box(xlen [,ylen[, center=(xc,yc) [,angle]]])
-          : Ellipse(xlen [,ylen[, center=(xc,yc) [,angle]]])
-          : Annulus(xlen ,ylen[, center=(xc,yc) ] )
-          : Circle(xlen [, center=(xc,yc) ])
-          : Point([center=(xc,yc)] )
-          : Pie(inner, outer, start, stop[, center=(xc,yc)] )
-          : Sector(start, stop [,center=(xc,yc)])
-          : Rectangle(xmin, ymin, xmax, ymax)
-          : Polygon( (x1,y1), (x2,y2), ..., (xn,yn))
-          : Field()
-          : Region(filename)
-
-        Examples:
-        
-        >>> Box(3)
-        >>> Box(3,4)
-        >>> Ellipse(50,100,angle=45)
-        >>> Circle(1,center=(50,50))
-        >>> Point()
-        >>> Rectangle( 10, 10, 100, 100)
-        >>> Polygon( (1,1), (1,2), (2,2), (2,1) )
-        >>> Region("ciao.reg")
-        >>> Region("ciao.fits[#row=1:10]")
-
-        The atomic filter shapes can be combined with the "+", "*",
-        and "-" operators.  The "-" is limited in the complexity of the
-        regions it can successful negate.
-
-        Examples:
-
-        >>> Box(10)-Box(4)  # a box annulus
-        >>> Circle(10)+Circle(1,center=(-8,8))+Circle(1,center=(8,8))  # Micky Mouse
-
-        >>> el1 = Ellipse( 50, 200, center=(300,300), angle=45)
-        >>> el2 = Ellipse( 50, 200, center=(300,300), angle= 135)        
-        >>> elxor = el1-el2 + el2-el1    # Exclusive OR, XOR
-        
-        >>> Field()-Region("ciao.reg")
-    
 
     Scale
     
@@ -459,9 +442,9 @@ class CIAOImage( HistoryIMAGECrate ):
             >>> img.filter("circle(4096,4096,10)")
             >>> img.filter(box(4096,4096,10,10)+ellipse(3290,4332,10,50,45))
             >>> img.filter("region(ds9.reg)")
-            >>> img.filter(Circle(10,center=(4096,4096)))
-            >>> img.filter(Field()-Region(ds9.reg))
-            >>> img.filter(Box(100), coord="(#1,#2)")
+            >>> img.filter(circle(4096,4096,10))
+            >>> img.filter(field()-region('ds9.reg'))
+            >>> img.filter(box(0,0,100,100), coord="(#1,#2)")
             >>> img.double().filter("box(4000,4500,10,12)", nullval=None)
             
             The image size remains the same before and after 
@@ -1184,7 +1167,7 @@ class CIAOImage( HistoryIMAGECrate ):
             raise ValueError("Invalid fill method: {}".format(method))
         
         if method in ["poly", "dist", "poisson", "bilint"]:
-            if None == bkg:
+            if bkg is None:
                 raise ValueError("Background region must be supplied with this method")
         
         return( _run_cmd( dmfilth, self, method=method.upper(), srclist=src.__str__(), bkglist=bkg.__str__()))
@@ -1448,7 +1431,7 @@ class CIAOImage( HistoryIMAGECrate ):
                 "q25","q33","q67","q75","mcv","sum","rclip","peak","valley",
                 "count","olympic","pmean","mu3","mu4","jitter","rms","nslope",
                 "sig3mean","sig3median" ]:
-                    getattr( self, mth)(Box(5)).write( mth+".out", clobber=True )
+                    getattr( self, mth)(box(0,0,5,5)).write( mth+".out", clobber=True )
                 
         if True:
             for mth in ["cos", "sin", "tan", "acos", "asin", "atan", "cosh", 
@@ -1487,28 +1470,28 @@ class CIAOImage( HistoryIMAGECrate ):
             self._smooth(Gaussian(3)).thresh(0.1,3,val=None).write("thresh_range.out",clobber=True)
 
         if True:
-            self.filter(Field(), coord="(#1,#2)").write("field.out", clobber=True)
+            self.filter(field(), coord="(#1,#2)").write("field.out", clobber=True)
             self.filter("field()", coord="(#1,#2)").write("field_str.out", clobber=True)
-            self.filter(Circle(200,(300,300)), coord="(#1,#2)").write("circle.out", clobber=True)
-            self.filter(Annulus(100,200,(300,300)), coord="(#1,#2)").write("annulus.out", clobber=True)
-            self.filter(Box(100,center=(200,200)), coord="(#1,#2)").write("box100.out", clobber=True)
-            self.filter(Box(100,200,(300,400)), coord="(#1,#2)").write("box100_200.out", clobber=True)
-            self.filter(Box(100,center=(300,300),angle=45), coord="(#1,#2)").write("box100_rot45.out",clobber=True)
-            self.filter(Ellipse(100,200,(300,400)), coord="(#1,#2)").write("ellipse100_200.out", clobber=True)
-            self.filter(Point(center=(546,333)), coord="(#1,#2)").write("point.out",clobber=True)
-            self.filter(Pie(30,100,-45,45,center=(300,300)), coord="(#1,#2)").write("pie.out",clobber=True)
-            self.filter(Sector(10,70), coord="(#1,#2)").write("sector.out",clobber=True)
-            self.filter(Rectangle( 100,100,300,400), coord="(#1,#2)").write("rectangle.out",clobber=True)
-            self.filter(Polygon( (197,410),(370,410),(496,242),(366,280),(306,150),(197,237)), coord="(#1,#2)").write("polygon.out", clobber=True)
+            self.filter(circle(300,300,200), coord="(#1,#2)").write("circle.out", clobber=True)
+            self.filter(annulus(300,300,100,200), coord="(#1,#2)").write("annulus.out", clobber=True)
+            self.filter(box(200,200,100,100), coord="(#1,#2)").write("box100.out", clobber=True)
+            self.filter(box(300,400,100,200), coord="(#1,#2)").write("box100_200.out", clobber=True)
+            self.filter(box(300,100,100,45), coord="(#1,#2)").write("box100_rot45.out",clobber=True)
+            self.filter(ellipse(300,400,100,200), coord="(#1,#2)").write("ellipse100_200.out", clobber=True)
+            self.filter(point(546,333), coord="(#1,#2)").write("point.out",clobber=True)
+            self.filter(pie(300,300,30,100,-45,45), coord="(#1,#2)").write("pie.out",clobber=True)
+            self.filter(sector(0,0,10,70), coord="(#1,#2)").write("sector.out",clobber=True)
+            self.filter(rectangle( 100,100,300,400), coord="(#1,#2)").write("rectangle.out",clobber=True)
+            self.filter(polygon( 197,410,370,410,496,242,366,280,306,150,197,237), coord="(#1,#2)").write("polygon.out", clobber=True)
 
-            two_boxes = Box(10,center=(200,200)) + Box(30,10,center=(400,400))
+            two_boxes = box(200,200,10,10) + box(400,400,30,10)
             self.filter(two_boxes, coord="(#1,#2)").write("2boxes.out",clobber=True)
 
-            pacmac = Circle(200,center=(300,300)) - Circle(100, center=(450,300))
+            pacmac = circle(300,300,200) - circle(450,300,100)
             self.filter(pacmac, coord="(#1,#2)").write("pacmac.out",clobber=True)
 
-            el1 = Ellipse( 50, 200, center=(300,300), angle=45)
-            el2 = Ellipse( 50, 200, center=(300,300), angle= 135)        
+            el1 = ellipse( 300,300, 50, 200, 45)
+            el2 = el1.tweak(rotate=90)
             elxor = el1-el2 + el2-el1
             eland = el1 * el2
             self.filter(elxor, coord="(#1,#2)").write("xor.out", clobber=True)
@@ -1598,7 +1581,7 @@ def _run_cmd( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
     if x : print x 
 
 
-@Crateify(Region)
+@Crateify(region)
 def _get_reg( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
 
     mycmd.punlearn()
@@ -1652,7 +1635,4 @@ def serialize_temp_crate( data2save ):
 
 
 
-
-#img = CIAOImage("img.fits")
-#img._test_()
 
