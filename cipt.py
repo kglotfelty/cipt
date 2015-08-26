@@ -1120,8 +1120,21 @@ class CIAOImage( HistoryIMAGECrate ):
         if None == nullval:
             nullval = "NaN"
         
-        vfspec="[{}={}][opt full,null={}]".format(coord,region, nullval )
-        return _run_cmd( dmcopy, self, vfspec=vfspec )
+        import tempfile as tempfile 
+        reg = tempfile.NamedTemporaryFile(delete=False ) 
+        reg.write( str(region) )
+        reg.close()
+
+        vfspec="[{}=region({})][opt full,null={}]".format(coord,reg.name, nullval )
+
+        try:
+            retval = _run_cmd( dmcopy, self, vfspec=vfspec )
+        finally:
+            import os
+            os.unlink( reg.name )
+        
+        return retval
+        
     
 
     def shift( self, dx, dy, **kwargs ):
@@ -1238,8 +1251,15 @@ class CIAOImage( HistoryIMAGECrate ):
         return(_get_reg( dmimghull, self, tolerance=tolerance ))
 
     def lasso( self, xpos, ypos, low_value=0, high_value="INDEF", **kwargs):
+
+        try:
+            import resource as resource
+            resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+        except:
+            pass
+
         dmimglasso = make_tool("dmimglasso")
-        return( _get_reg( dmimglasso, self, xpos=xpos, ypos=ypos, low_value=low_value, high_value=high_value, **kwargs))
+        return( _get_reg( dmimglasso, self, xpos=xpos, ypos=ypos, low_value=low_value, high_value=high_value, maxdepth=100000000, **kwargs))
 
     def get_src_region( self):
         raise NotImplementedError("This command is not currently supported")
