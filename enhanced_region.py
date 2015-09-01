@@ -55,9 +55,9 @@ True
 [1]
 
 >>> c[0]
-('', circle(1000,1000,50))
+circle(1000,1000,50)
 >>> c[1]
-('+', box(1010,1010,50,100))
++box(1010,1010,50,100)
 
 
 """
@@ -146,47 +146,16 @@ def wrap_vals( vv ):
 
 
 
-class ShapeOperation( object ):
-    """
-    Individual shapes can be AND'ed or OR'ed together (intersected and unioned).
-    
-    As the operations exist between shapes, the 1st shape's operations
-    is a NOOP.    
-    """
-    
-    @property
-    def val(self):
-        return self._value
-        
-    def __repr__(self):
-        return str(self)
-    
-    
-class opAND( ShapeOperation ):
-    def __init__(self):
-        self._value = 0
-    
-    def __str__(self):
-        return _AND_
-    
-        
-class opOR( ShapeOperation):
-    def __init__(self):
-        self._value = 1
-    
-    def __str__(self):
-        return _OR_
-    
-    
-class opNOOP( ShapeOperation):
-    """The first shape in a region technically has no operation."""
-    def __init__(self):
-        self._value = 1 # Same as OR
-    
-    def __str__(self):
-        return _BLANK_
+from collections import namedtuple
+ShapeOperation = namedtuple("ShapeOperation", ['val', 'str'] )
+opAND = ShapeOperation( 0, _AND_ )
+opOR = ShapeOperation( 1, _OR_ )
+opNOOP = ShapeOperation( 1, _BLANK_ )
 
-        
+ShapeInclusion = namedtuple("ShapeInclusion", ['val', 'str'] )
+incINCLUDE = ShapeInclusion( 1, _BLANK_ )
+incEXCLUDE = ShapeInclusion( 0, _NOT_ )
+
 
 
 class EnhancedShape( object ):
@@ -256,7 +225,7 @@ class EnhancedShape( object ):
         shape_name = create_string_buffer(100)
         iflag = region_lib.regShapeGetName(self._ptr, shape_name, 99)
         self._shape = shape_name.value.lower()
-        self._include = _NOT_ if 0 == iflag else _BLANK_
+        self._include = incEXCLUDE if 0 == iflag else incINCLUDE
 
 
     def _get_points(self):
@@ -307,8 +276,8 @@ class EnhancedShape( object ):
         """
         self.xx_str = [ self._precise_string.format(x) for x in self.xx ]
         self.yy_str = [ self._precise_string.format(y) for y in self.yy ]
-        self.rad_str = [ self._precise_string.format(y) for y in self.rad ]
-        self.ang_str = [ self._precise_string.format(y) for y in self.ang ]
+        self.rad_str = [ self._precise_string.format(r) for r in self.rad ]
+        self.ang_str = [ self._precise_string.format(a) for a in self.ang ]
 
         self.fmt_vals = {
             'x0' : self.xx_str[0] if len(self.xx_str) > 0 else None,
@@ -319,7 +288,7 @@ class EnhancedShape( object ):
             'r1' : self.rad_str[1] if len(self.rad_str) > 1 else None,
             'a0' : self.ang_str[0] if len(self.ang_str) > 0 else None,
             'a1' : self.ang_str[1] if len(self.ang_str) > 1 else None,
-            'i'  : self.include,
+            'i'  : self.include.str,
             'n'  : self.shape,
             'xy' : ",".join([ "{},{}".format(x,y) for x,y in zip( self.xx_str, self.yy_str ) ])
             }
@@ -497,7 +466,7 @@ class EnhancedRegion( object ):
 
     def __str__( self ):
         """Construct the string value from the shapes & logic"""
-        retval = _BLANK_.join( [str(shape.logic)+str(shape) for shape in self.shapes ] )
+        retval = _BLANK_.join( [shape.logic.str+str(shape) for shape in self.shapes ] )
         return(retval)
 
 
@@ -559,13 +528,13 @@ class EnhancedRegion( object ):
 
         cpt_vals = [s.component for s in self.shapes ]
 
-        logic = [ opNOOP() ] # First shape has no logic
+        logic = [ opNOOP ] # First shape has no logic
         for i in range( 1, len(cpt_vals)):
             # If component values are equal then &, else |
             if cpt_vals[i]==cpt_vals[i-1]:
-                logic.append( opAND() )
+                logic.append( opAND )
             else:
-                logic.append( opOR() )
+                logic.append( opOR )
         return logic
 
 
@@ -728,16 +697,16 @@ class EnhancedRegion( object ):
         vptr = c_void_p(copy_ptr)
 
 
-        reg_inc = c_int(0) if _NOT_ == shape.include else c_int(1)
+        reg_inc = shape.include.val
         region_lib.regAppendShape( vptr,
                             c_char_p(shape.shape),
-                            reg_inc, c_int(opNOOP().val),
+                            reg_inc, c_int(opNOOP.val),
                             wrap_vals( shape.xx ),
                             wrap_vals( shape.yy ),
                             c_long( len(shape.xx) ),
                             wrap_vals( shape.rad ),
                             wrap_vals( shape.ang ),
-                            c_int(0), c_int(0) )
+                            None, None )
 
         retval = EnhancedRegion(copy_ptr)
         retval.shapes[0]._set_logic( shape.logic )
@@ -816,7 +785,7 @@ class EnhancedRegion( object ):
             shape = self.shapes[ii]
 
             reg_math =shape.logic.val
-            reg_inc = c_int(0) if _NOT_ == shape.include else c_int(1)
+            reg_inc = shape.include.val
 
             copy_xx = [ x+dx for x in shape.xx]
             copy_yy = [ y+dy for y in shape.yy]
@@ -831,7 +800,7 @@ class EnhancedRegion( object ):
                                 c_long( len(copy_xx) ),
                                 wrap_vals( copy_rr ),
                                 wrap_vals( copy_aa ),
-                                c_int(0), c_int(0) )
+                                None, None)
         return EnhancedRegion(copy_ptr)
 
 
@@ -843,13 +812,13 @@ def SimpleGeometricShapes( name_as_string, xx, yy, radius, angle ):
     vptr = c_void_p(new_ptr)
     region_lib.regAppendShape( vptr,
                         c_char_p(name_as_string) ,
-                        c_int(1), c_int(opNOOP().val),
+                        c_int(incINCLUDE.val), c_int(opNOOP.val),
                         wrap_vals(xx),
                         wrap_vals(yy),
                         c_long( len(xx) ),
                         wrap_vals( radius ),
                         wrap_vals( angle ),
-                        c_int(0), c_int(0) )
+                        None, None)
     if 0 == region_lib.regGetNoShapes( vptr ):
         raise RuntimeError("Bad region parameters")
 
