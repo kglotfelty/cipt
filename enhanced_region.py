@@ -145,7 +145,6 @@ def wrap_vals( vv ):
     return retval
 
 
-
 class EnhancedShape( object ):
     """
     All regions are composed of simple geometric shapes (even 1 region with only
@@ -166,6 +165,7 @@ class EnhancedShape( object ):
         self._get_radii()
         self._get_angle()
         self._get_component()
+        self._logic = None
 
 
     @property
@@ -197,6 +197,11 @@ class EnhancedShape( object ):
     def include(self):
         """Get the include flag"""
         return self._include
+
+    @property
+    def logic(self):
+        """Get the logic operation"""
+        return self._logic
 
 
     def _get_name(self):
@@ -252,7 +257,7 @@ class EnhancedShape( object ):
         self.component = region_lib.regShapeGetComponent( self._ptr )
 
 
-    def _store_string(self, fmt_str):
+    def _format_string(self, fmt_str):
         """
         Convert the values to strings using the desired precision/format
         """
@@ -278,6 +283,9 @@ class EnhancedShape( object ):
         return fmt_str.format( **self.fmt_vals )
 
 
+    def _set_logic(self, val ):
+        self._logic = val
+
     def __str__(self):
         raise NotImplementedError("Implement this in the derived classes")
 
@@ -292,7 +300,7 @@ class EnhancedShape( object ):
 class Annulus(EnhancedShape):
     """An annulus is defined by x_center, y_center, inner_radius, outer_radius"""
     def __str__( self ):
-        return self._store_string("{i}{n}({x0},{y0},{r0},{r1})")
+        return self._format_string("{i}{n}({x0},{y0},{r0},{r1})")
 
 
     @with_plotting
@@ -303,7 +311,7 @@ class Annulus(EnhancedShape):
 class Box(EnhancedShape):
     """A box is defined by x_center, y_center, x_length, y_length"""
     def __str__( self ):
-        return self._store_string("{i}{n}({x0},{y0},{r0},{r1})")
+        return self._format_string("{i}{n}({x0},{y0},{r0},{r1})")
 
 
     @with_plotting
@@ -314,7 +322,7 @@ class Box(EnhancedShape):
 class Circle(EnhancedShape):
     """A circle is defined by x_center, y_center, radius"""
     def __str__( self ):
-        return self._store_string("{i}{n}({x0},{y0},{r0})")
+        return self._format_string("{i}{n}({x0},{y0},{r0})")
 
 
     @with_plotting
@@ -325,7 +333,7 @@ class Circle(EnhancedShape):
 class Ellipse(EnhancedShape):
     """An ellipse is defined by x_center, y_center, major_axis, minor_axis, and angle"""
     def __str__( self ):
-        return self._store_string("{i}{n}({x0},{y0},{r0},{r1},{a0})")
+        return self._format_string("{i}{n}({x0},{y0},{r0},{r1},{a0})")
         
         
     @with_plotting
@@ -336,7 +344,7 @@ class Ellipse(EnhancedShape):
 class Field(EnhancedShape):
     """A field is defined to be the entire R^2 dataspace"""
     def __str__( self ):
-        return self._store_string("{i}{n}()")
+        return self._format_string("{i}{n}()")
 
 
     @with_plotting
@@ -347,7 +355,7 @@ class Field(EnhancedShape):
 class Pie(EnhancedShape):
     """A Pie is defined by x_center, y_center, inner_radius, outer_radius, start_angle, stop_angle"""
     def __str__( self ):
-        return self._store_string("{i}{n}({x0},{y0},{r0},{r1},{a0},{a1})")
+        return self._format_string("{i}{n}({x0},{y0},{r0},{r1},{a0},{a1})")
         
 
     @with_plotting
@@ -358,7 +366,7 @@ class Pie(EnhancedShape):
 class Point(EnhancedShape):
     """A point is defined by x_center, y_center"""
     def __str__( self ):
-        return self._store_string("{i}{n}({x0},{y0})")
+        return self._format_string("{i}{n}({x0},{y0})")
 
 
     @with_plotting
@@ -369,7 +377,7 @@ class Point(EnhancedShape):
 class Polygon(EnhancedShape):
     """A Polygon is defined as x1,y1, x2,y2,x3,y3,..."""
     def __str__( self ):
-        return self._store_string("{i}{n}({xy})")
+        return self._format_string("{i}{n}({xy})")
 
 
     @with_plotting
@@ -380,7 +388,7 @@ class Polygon(EnhancedShape):
 class Rectangle(EnhancedShape):
     """A Polygon is defined as lower_left_x,lower_left_y,upper_right_x,upper_right_y"""
     def __str__( self ):
-        return self._store_string("{i}{n}({x0},{y0},{x1},{y1})")
+        return self._format_string("{i}{n}({x0},{y0},{x1},{y1})")
 
 
     @with_plotting
@@ -391,7 +399,7 @@ class Rectangle(EnhancedShape):
 class Rotbox(EnhancedShape):
     """A Rotbox is defined as x_center, y_center, x_length, y_length, angle """
     def __str__(self):
-        return self._store_string("{i}{n}({x0},{y0},{r0},{r1},{a0})")
+        return self._format_string("{i}{n}({x0},{y0},{r0},{r1},{a0})")
 
 
     @with_plotting
@@ -402,7 +410,7 @@ class Rotbox(EnhancedShape):
 class Sector(EnhancedShape):
     """A Sector is defined by x_center, y_center, start_angle, stop_angle"""
     def __str__( self ):
-        return self._store_string("{i}{n}({x0},{y0},{a0},{a1})")
+        return self._format_string("{i}{n}({x0},{y0},{a0},{a1})")
 
 
     @with_plotting
@@ -445,7 +453,7 @@ class EnhancedRegion( object ):
 
     def __str__( self ):
         """Construct the string value from the shapes & logic"""
-        retval = _BLANK_.join( [logic+str(shape) for logic,shape in zip(self.logic,self.shapes) ] )
+        retval = _BLANK_.join( [shape.logic+str(shape) for shape in self.shapes ] )
         return(retval)
 
 
@@ -458,12 +466,17 @@ class EnhancedRegion( object ):
         Load the shapes into the region.
         """
         self._classify_shapes()
-        self._determine_logic()
+        logic = self._determine_logic()
+        map( lambda s,l: s._set_logic(l), self._shapes, logic)
 
 
     @staticmethod
     def _get_shape_name( shape_ptr):
-        """Get the name of a shape"""
+        """Get the name of a shape.
+        
+        This is kind of a look-ahead thing so that we can know the shape
+        name so that we know which EhanceShape sub-class to create.
+        """
         shape_name = create_string_buffer(100)
         region_lib.regShapeGetName(shape_ptr, shape_name, c_long(99))
         return shape_name.value.lower()
@@ -484,15 +497,12 @@ class EnhancedRegion( object ):
             vptr = c_void_p(shape_ptr)
             shape_name = self._get_shape_name(vptr)
             if shape_name in self._shape_classes:
-                self._shapes.append( self._shape_classes[shape_name](shape_ptr) )
+                # Create a new shape object of the correct type
+                new_shape_class = self._shape_classes[shape_name]
+                new_shape = new_shape_class(shape_ptr)
+                self._shapes.append( new_shape )
             else:
                 raise ValueError("Unknown shape name {}".format(shape_name))
-
-
-    @property
-    def logic(self):
-        """Return a list of logic operators, how are shapes combined"""
-        return self._logic
 
 
     def _determine_logic(self):
@@ -505,13 +515,14 @@ class EnhancedRegion( object ):
 
         cpt_vals = [s.component for s in self.shapes ]
 
-        self._logic = [ _BLANK_ ] # First shape has no logic
+        logic = [ _BLANK_ ] # First shape has no logic
         for i in range( 1, len(cpt_vals)):
             # If component values are equal then &, else |
             if cpt_vals[i]==cpt_vals[i-1]:
-                self._logic.append(_AND_)
+                logic.append(_AND_)
             else:
-                self._logic.append(_OR_)
+                logic.append(_OR_)
+        return logic
 
 
     def area( self ):
@@ -539,6 +550,8 @@ class EnhancedRegion( object ):
         if fits:
             # Some error checking here  would be nice :)
             oDs = cxcdm_lib.dmDatasetCreate( c_char_p(filename) )
+            if not oDs:
+                raise IOError("Cannot create filename {}".format(filename))
             blk = cxcdm_lib.dmTableWriteRegion( c_void_p(oDs), c_char_p("REGION"), None, self._ptr)
             cxcdm_lib.dmDatasetClose(c_void_p(oDs))
             
@@ -662,7 +675,6 @@ class EnhancedRegion( object ):
         """Returns the logic and shape as index"""
         try:
             shape = self.shapes[idx]
-            logic = self.logic[idx]
         except IndexError, e:
             raise IndexError("Invalid index value for this region")
         except:
@@ -680,7 +692,10 @@ class EnhancedRegion( object ):
                             wrap_vals( shape.rad ),
                             wrap_vals( shape.ang ),
                             c_int(0), c_int(0) )
-        return ( logic, EnhancedRegion(copy_ptr) )
+
+        retval = EnhancedRegion(copy_ptr)
+        retval.shapes[0]._set_logic( shape.logic )
+        return retval
         
 
     def __len__(self):
@@ -752,10 +767,9 @@ class EnhancedRegion( object ):
         copy_ptr = region_lib.regCreateEmptyRegion()
         vptr = c_void_p(copy_ptr)
         for ii in range( len(self) ):
-            logic,s = self[ii]
             shape = self.shapes[ii]
 
-            reg_math = c_int(0) if _AND_ == logic else c_int(1)
+            reg_math = c_int(0) if _AND_ == shape.logic else c_int(1)
             reg_inc = c_int(0) if _NOT_ == shape.include else c_int(1)
 
             copy_xx = [ x+dx for x in shape.xx]
