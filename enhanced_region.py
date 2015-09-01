@@ -145,6 +145,50 @@ def wrap_vals( vv ):
     return retval
 
 
+
+class ShapeOperation( object ):
+    """
+    Individual shapes can be AND'ed or OR'ed together (intersected and unioned).
+    
+    As the operations exist between shapes, the 1st shape's operations
+    is a NOOP.    
+    """
+    
+    @property
+    def val(self):
+        return self._value
+        
+    def __repr__(self):
+        return str(self)
+    
+    
+class opAND( ShapeOperation ):
+    def __init__(self):
+        self._value = 0
+    
+    def __str__(self):
+        return _AND_
+    
+        
+class opOR( ShapeOperation):
+    def __init__(self):
+        self._value = 1
+    
+    def __str__(self):
+        return _OR_
+    
+    
+class opNOOP( ShapeOperation):
+    """The first shape in a region technically has no operation."""
+    def __init__(self):
+        self._value = 1 # Same as OR
+    
+    def __str__(self):
+        return _BLANK_
+
+        
+
+
 class EnhancedShape( object ):
     """
     All regions are composed of simple geometric shapes (even 1 region with only
@@ -453,7 +497,7 @@ class EnhancedRegion( object ):
 
     def __str__( self ):
         """Construct the string value from the shapes & logic"""
-        retval = _BLANK_.join( [shape.logic+str(shape) for shape in self.shapes ] )
+        retval = _BLANK_.join( [str(shape.logic)+str(shape) for shape in self.shapes ] )
         return(retval)
 
 
@@ -515,13 +559,13 @@ class EnhancedRegion( object ):
 
         cpt_vals = [s.component for s in self.shapes ]
 
-        logic = [ _BLANK_ ] # First shape has no logic
+        logic = [ opNOOP() ] # First shape has no logic
         for i in range( 1, len(cpt_vals)):
             # If component values are equal then &, else |
             if cpt_vals[i]==cpt_vals[i-1]:
-                logic.append(_AND_)
+                logic.append( opAND() )
             else:
-                logic.append(_OR_)
+                logic.append( opOR() )
         return logic
 
 
@@ -682,10 +726,12 @@ class EnhancedRegion( object ):
 
         copy_ptr = region_lib.regCreateEmptyRegion()
         vptr = c_void_p(copy_ptr)
+
+
         reg_inc = c_int(0) if _NOT_ == shape.include else c_int(1)
         region_lib.regAppendShape( vptr,
                             c_char_p(shape.shape),
-                            reg_inc, c_int(0),
+                            reg_inc, c_int(opNOOP().val),
                             wrap_vals( shape.xx ),
                             wrap_vals( shape.yy ),
                             c_long( len(shape.xx) ),
@@ -769,7 +815,7 @@ class EnhancedRegion( object ):
         for ii in range( len(self) ):
             shape = self.shapes[ii]
 
-            reg_math = c_int(0) if _AND_ == shape.logic else c_int(1)
+            reg_math =shape.logic.val
             reg_inc = c_int(0) if _NOT_ == shape.include else c_int(1)
 
             copy_xx = [ x+dx for x in shape.xx]
@@ -779,7 +825,7 @@ class EnhancedRegion( object ):
 
             region_lib.regAppendShape( vptr,
                                 c_char_p(shape.shape),
-                                reg_inc, reg_math,
+                                reg_inc, c_int(reg_math),
                                 wrap_vals( copy_xx ),
                                 wrap_vals( copy_yy ),
                                 c_long( len(copy_xx) ),
@@ -797,7 +843,7 @@ def SimpleGeometricShapes( name_as_string, xx, yy, radius, angle ):
     vptr = c_void_p(new_ptr)
     region_lib.regAppendShape( vptr,
                         c_char_p(name_as_string) ,
-                        c_int(1), c_int(1),
+                        c_int(1), c_int(opNOOP().val),
                         wrap_vals(xx),
                         wrap_vals(yy),
                         c_long( len(xx) ),
