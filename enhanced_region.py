@@ -84,26 +84,34 @@ except:
         raise ImportError("Cannot load region library")
 
 
-# Set return types.  Probably don't need void's, int's, and long's, but
-# do it anyway for completeness
+# Set return types.  OSX is picky about these
+
 region_lib.regArea.restype = c_double
 region_lib.regCreateEmptyRegion.restype = c_void_p
-region_lib.regInsideRegion.restype = c_int
-region_lib.regUnionRegion.restype = c_void_p
-region_lib.regIntersectRegion.restype = c_void_p
-region_lib.regInvert.restype = c_void_p
+region_lib.regCompareRegion.restype = c_int
+region_lib.regCopyRegion.restype = c_void_p
 region_lib.regGetNoShapes.restype = c_long
 region_lib.regGetShapeNo.restype = c_void_p
-region_lib.regShapeRadii.restype = c_long
+region_lib.regInsideRegion.restype = c_int
+region_lib.regIntersectRegion.restype = c_void_p
+region_lib.regInvert.restype = c_void_p
 region_lib.regShapeAngles.restype = c_long
+region_lib.regShapeRadii.restype = c_long
+region_lib.regShapeGetAngles.restype = c_long 
+region_lib.regShapeGetComponent.restype = c_long
 region_lib.regShapeGetName.restype = c_int
 region_lib.regShapeGetNoPoints.restype = c_long
-region_lib.regShapeGetComponent.restype = c_long
-region_lib.regShapeGetPoints.restype = c_long # unused
-region_lib.regShapeGetAngles.restype = c_long # unused
-region_lib.regShapeGetRadii.restype = c_long # unused
-cxcdm_lib.dmRegParse.restype = c_void_p
+region_lib.regShapeGetPoints.restype = c_long 
+region_lib.regShapeGetRadii.restype = c_long 
+region_lib.regUnionRegion.restype = c_void_p
 
+cxcdm_lib.dmDatasetCreate.restype = c_void_p
+cxcdm_lib.dmBlockGetDataset.restype = c_void_p
+cxcdm_lib.dmBlockOpen.restype = c_void_p
+cxcdm_lib.dmRegParse.restype = c_void_p
+cxcdm_lib.dmSubspaceColGetRegion.restype = c_void_p
+cxcdm_lib.dmSubspaceColOpen.restype = c_void_p
+cxcdm_lib.dmTableWriteRegion.restype = c_void_p
 
 
 
@@ -152,7 +160,7 @@ class EnhancedShape( object ):
         """The input is a c_void_p regShape pointer.  Uses the region lib
         API to extract the shape parameters"""
 
-        self._ptr = shape_ptr
+        self._ptr = c_void_p(shape_ptr)
         self._get_name()
         self._get_points()
         self._get_radii()
@@ -430,7 +438,7 @@ class EnhancedRegion( object ):
         This is not meant to be exposed to user.  It takes in a c_void_p
         regREGION pointer
         """
-        self._ptr = ptr
+        self._ptr = c_void_p(ptr)
         self._load_shapes()
         self._region_lib = region_lib # keep a ref to this so it can be used to free shapes during garbage collection
 
@@ -457,7 +465,7 @@ class EnhancedRegion( object ):
     def _get_shape_name( shape_ptr):
         """Get the name of a shape"""
         shape_name = create_string_buffer(100)
-        region_lib.regShapeGetName(shape_ptr, shape_name, 99)
+        region_lib.regShapeGetName(shape_ptr, shape_name, c_long(99))
         return shape_name.value.lower()
 
 
@@ -473,7 +481,8 @@ class EnhancedRegion( object ):
         self._shapes = []
         for i in range(1,nshapes+1):
             shape_ptr = region_lib.regGetShapeNo( self._ptr, c_long(i) )
-            shape_name = self._get_shape_name( shape_ptr)
+            vptr = c_void_p(shape_ptr)
+            shape_name = self._get_shape_name(vptr)
             if shape_name in self._shape_classes:
                 self._shapes.append( self._shape_classes[shape_name](shape_ptr) )
             else:
@@ -529,9 +538,9 @@ class EnhancedRegion( object ):
         
         if fits:
             # Some error checking here  would be nice :)
-            oDs = cxcdm_lib.dmDatasetCreate( filename )
-            blk = cxcdm_lib.dmTableWriteRegion( oDs, "REGION", None, self._ptr)
-            cxcdm_lib.dmDatasetClose(oDs)
+            oDs = cxcdm_lib.dmDatasetCreate( c_char_p(filename) )
+            blk = cxcdm_lib.dmTableWriteRegion( c_void_p(oDs), c_char_p("REGION"), None, self._ptr)
+            cxcdm_lib.dmDatasetClose(c_void_p(oDs))
             
         else:
             as_str = str(self)
@@ -608,7 +617,7 @@ class EnhancedRegion( object ):
         cpts = self._ptr
         cpto = other._ptr
         invrt = region_lib.regInvert( cpto )
-        return EnhancedRegion( region_lib.regIntersectRegion( cpts, invrt ) )
+        return EnhancedRegion( region_lib.regIntersectRegion( cpts, c_void_p(invrt) ))
 
 
     def __neg__(self):
@@ -628,7 +637,9 @@ class EnhancedRegion( object ):
         if not isinstance( other, type(self)):
             raise TypeError("Cannot perform region logic with {} type".format(type(other)) )
 
-        return region_lib.regCompareRegion(self._ptr, other._ptr)
+        retval = region_lib.regCompareRegion(self._ptr, other._ptr)
+
+        return (retval != 0)
 
     def __and__(self, other ):
         """shape & shape ==> shape * shape """
@@ -658,10 +669,10 @@ class EnhancedRegion( object ):
             raise
 
         copy_ptr = region_lib.regCreateEmptyRegion()
-
+        vptr = c_void_p(copy_ptr)
         reg_inc = c_int(0) if _NOT_ == shape.include else c_int(1)
-        region_lib.regAppendShape( copy_ptr,
-                            shape.shape,
+        region_lib.regAppendShape( vptr,
+                            c_char_p(shape.shape),
                             reg_inc, c_int(0),
                             wrap_vals( shape.xx ),
                             wrap_vals( shape.yy ),
@@ -739,6 +750,7 @@ class EnhancedRegion( object ):
         Each tweak is applied to each shape separately
         """
         copy_ptr = region_lib.regCreateEmptyRegion()
+        vptr = c_void_p(copy_ptr)
         for ii in range( len(self) ):
             logic,s = self[ii]
             shape = self.shapes[ii]
@@ -751,8 +763,8 @@ class EnhancedRegion( object ):
             copy_rr = [ r*stretch for r in shape.rad]
             copy_aa = [ a+rotate for a in shape.ang ]
 
-            region_lib.regAppendShape( copy_ptr,
-                                shape.shape,
+            region_lib.regAppendShape( vptr,
+                                c_char_p(shape.shape),
                                 reg_inc, reg_math,
                                 wrap_vals( copy_xx ),
                                 wrap_vals( copy_yy ),
@@ -768,8 +780,9 @@ def SimpleGeometricShapes( name_as_string, xx, yy, radius, angle ):
     For single shape regions crated with the routines below
     """
     new_ptr = region_lib.regCreateEmptyRegion()
-    region_lib.regAppendShape( new_ptr,
-                        name_as_string ,
+    vptr = c_void_p(new_ptr)
+    region_lib.regAppendShape( vptr,
+                        c_char_p(name_as_string) ,
                         c_int(1), c_int(1),
                         wrap_vals(xx),
                         wrap_vals(yy),
@@ -777,7 +790,7 @@ def SimpleGeometricShapes( name_as_string, xx, yy, radius, angle ):
                         wrap_vals( radius ),
                         wrap_vals( angle ),
                         c_int(0), c_int(0) )
-    if 0 == region_lib.regGetNoShapes( new_ptr ):
+    if 0 == region_lib.regGetNoShapes( vptr ):
         raise RuntimeError("Bad region parameters")
 
     return EnhancedRegion(new_ptr)
@@ -881,18 +894,23 @@ def polygon( *args ):
 def region( filename ):
     """region(filename)
 
-    Load regions from file
+    Load regions from file or parse a region string
+    
+    >>> reg = region("foo.fits")
+    >>> reg = region("region(foo.fits)"
+    >>> reg = region("bounds(region(foo.fits))")
+    >>> reg = region("circle(1,2,4)")    
     """
 
     retval = None
     try:
-        retval = cxcdm_lib.dmRegParse( str(filename) )
+        retval = cxcdm_lib.dmRegParse( c_char_p(str(filename) ))
         if not retval:
             raise IOError("try with a region()")
         return EnhancedRegion(retval)
     except Exception, E:
         try:
-            retval = cxcdm_lib.dmRegParse( "region({})".format(str(filename)) )
+            retval = cxcdm_lib.dmRegParse( c_char_p("region({})".format(str(filename)) ))
             if not retval:
                 raise
             return EnhancedRegion(retval)
@@ -900,30 +918,34 @@ def region( filename ):
             raise IOError("Cannot parse region file")
 
 
-
-cxcdm_lib.dmBlockOpen.restype = c_void_p
-cxcdm_lib.dmSubspaceColOpen.restype = c_void_p
-cxcdm_lib.dmSubspaceColGetRegion.restype = c_void_p
-cxcdm_lib.dmBlockGetDataset.restype = c_void_p
-
 def dss( filename, colname="sky", component=1 ):
-    """Okay, this is treading on thin ice ... but I know it gives
-    me a regRegion *ptr """
+    """Extract the region from a DM files's data subspace.  
+    The colname is the subspace column name (usually 'sky').
+    The component value is the DM subspace component (1 to N); usually
+    for different CCDs -- how component numbers map to 
+    meaninful sets of data is beyond this scope.
+    
+    Examples:
+
+    >>> reg = dss("foo.fits")
+    >>> chip = dss("imap.fits", colname="chip")
+    >>> ccd0 = dss("image.fits", component=5)
+    """
     
     retval = None
     
-    blk = cxcdm_lib.dmBlockOpen( None, filename )
+    blk = cxcdm_lib.dmBlockOpen( None, c_char_p(filename) )
     if 0 == blk:
         raise IOError("Unable to open file '{}'".format(filename))
 
-    cxcdm_lib.dmBlockSetSubspaceCpt( blk, c_long( component ) )
-    col = cxcdm_lib.dmSubspaceColOpen( c_void_p( blk), colname )
-    ptr = cxcdm_lib.dmSubspaceColGetRegion( col )     
+    cxcdm_lib.dmBlockSetSubspaceCpt( c_void_p(blk), c_long( component ) )
+    col = cxcdm_lib.dmSubspaceColOpen( c_void_p( blk), c_char_p(colname) )
+    ptr = cxcdm_lib.dmSubspaceColGetRegion( c_void_p(col) )     
 
     retval = EnhancedRegion( ptr )
-    ds = cxcdm_lib.dmBlockGetDataset( blk )
-    cxcdm_lib.dmBlockClose( blk )
-    cxcdm_lib.dmDatasetClose( ds )
+    ds = cxcdm_lib.dmBlockGetDataset( c_void_p(blk) )
+    cxcdm_lib.dmBlockClose( c_void_p(blk ))
+    cxcdm_lib.dmDatasetClose(c_void_p(ds) )
     return retval
     
 
@@ -1107,14 +1129,15 @@ def test():
     print circle(10,10,+123)+box(10,10,1,1)
     print circle(10,10,100)*box(10,10,1,1)
     print circle(10,10,100)-box(10,10,1,1)
-    z = region("/lenin2.real/export/byobsid/repro/ds9.reg")
+    print -circle(50,50,100)
+    z = region("/data/lenin2/export/byobsid/repro/ds9.reg")
     print z
-    #z.write("goo.reg")
+    z.write("goo.reg")
     #z.plot()
 
-    cc = region("/lenin2.real/Test/4.8b1/Regression/ciao4.8b1_linux64/dmcontour/04/dmcontour_4.fits")
-    #print cc
-    #cc.write("cntr.reg")
+    cc = region("/data/lenin2/Test/4.8b1/Regression/ciao4.8b1_linux64/dmcontour/04/dmcontour_4.fits")
+    print len(cc)
+    cc.write("cntr.reg")
 
     a = pie(0,0, 1, 2, -45, 56)
     d = pie(0,0, 1, 2, -45, 56)
@@ -1131,7 +1154,11 @@ def test():
     print p
     print q
 
-#__test__()
+    q = dss('/data/lenin2/Projects/PIMMS/Doc/9768/repro/todetect/goo.fits')
+    print len(q)
+
+
+__all__.append("test")
 
 
 
