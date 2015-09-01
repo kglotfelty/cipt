@@ -45,6 +45,20 @@ circle(1000,1000,50)*box(1010,1010,50,100)
 >>> print e
 circle(1000,1000,50)*!box(1010,1010,50,100)
 
+>>> a in c
+True
+>>> b in c
+True
+>>> c.index(a)
+[0]
+>>> c.index(b)
+[1]
+
+>>> c[0]
+('', circle(1000,1000,50))
+>>> c[1]
+('+', box(1010,1010,50,100))
+
 
 """
 
@@ -190,11 +204,8 @@ class EnhancedShape( object ):
 
     def _get_points(self):
         """
-        Gets the x,y values.
+        Gets the x,y values from the regShape pointer
 
-        The string version of the values are stored now too.
-        TODO: wrap w/ a setter that does the string conversion so that
-        if class is exposed then string is kept in sync with double values
         """
         npts = region_lib.regShapeGetNoPoints( self._ptr )
         ox = (c_double * npts)()
@@ -206,9 +217,7 @@ class EnhancedShape( object ):
 
     def _get_radii(self):
         """
-        Gets the radius/radii
-
-        Also stores the string version (see TODO above)
+        Gets the radius/radii from the regShape pointer
         """
         nrad = region_lib.regShapeRadii( self._ptr )
         outr = (c_double * nrad)()
@@ -218,9 +227,7 @@ class EnhancedShape( object ):
 
     def _get_angle(self):
         """
-        Gets the angle/angles
-
-        Also stores the string version (see TODO above)
+        Gets the angle/angles from the regShape pointer
         """
         nang = region_lib.regShapeAngles( self._ptr )
         oa = (c_double*nang)()
@@ -402,7 +409,6 @@ class EnhancedRegion( object ):
     A region is made up of a collection of EnhancedShapes that are combined
     with AND and OR logical operators.
 
-    Only the shape_classes shapes are implemented.
     """
     _shape_classes = { 'annulus': Annulus,
                'box' : Box,
