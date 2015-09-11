@@ -11,11 +11,22 @@ CIAO regions stored in Physical coordinates.
 """
 
 __all__ = [ "plot_ellipse", "plot_box", "plot_circle", "plot_rectangle", "plot_polygon", 
-            "plot_annulus", "plot_pie"] 
+            "plot_annulus", "plot_pie", "plot_region", "set_plot_with_lines"] 
 
 
 import numpy as np
 
+_UseLines = False
+
+def set_plot_with_lines( use_lines ):
+    """
+    Switch between using lines or regions to draw shapes.
+    
+    use_lines = True  -> will use lines
+    use_lines = False -> will use regions
+    """
+    global _UseLines
+    _UseLines = use_lines
 
 
 def simplify_polygon( xx, yy, delta ):
@@ -67,12 +78,17 @@ def add_region( xx, yy, style, delta=0 ):
     """
 
     import pychips as chips
+    global _UseLines
     
     if delta > 4:
         raise RuntimeError("Problem plotting shape")
 
     try:
-        chips.add_region( xx,yy, style)
+        if _UseLines:
+            # TODO: append first point onto end to close shape
+            chips.add_curve( xx, yy, style)
+        else:
+            chips.add_region(xx,yy, style)
     except Exception, e:
         delta = delta + 0.1
         xp, yp = simplify_polygon( xx, yy, delta=delta)
@@ -311,3 +327,48 @@ def plot_annulus( x0, y0, rad_in, rad_out, style="" ):
 def plot_point(x0, y0):
     raise NotImplementedError("Please use add_point()")    
     
+
+
+
+
+def plot_region( regRegion, style="" ):
+    """
+    
+    
+    """
+
+    try:
+        tst = len( regRegion )
+        tst = regRegion[0].shapes[0].shape
+         
+    except:
+        raise TypeError("Input parameter does not appear to be a valid region object")
+ 
+    for rr in regRegion:
+        ss = rr.shapes[0]
+        shape = ss.shape
+        if 'annulus' == shape:
+            plot_annulus( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], style=style )
+        elif 'box' == shape:
+            plot_box( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], style=style )
+        elif 'circle' == shape:
+            plot_circle( ss.xx[0], ss.yy[0], ss.rad[0], style=style )
+        elif 'ellipse' == shape:
+            plot_ellipse( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], ss.ang[0], style=style )
+        elif 'field' == shape:
+            pass # no fields please
+        elif 'pie' == shape:
+            plot_pie( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], ss.ang[0], ss.ang[1], style=style )
+        elif 'point' == shape:
+            pass # no points please
+        elif 'polygon' == shape:
+            plot_polygon( ss.xx, ss.yy, style=style )
+        elif 'rectangle' == shape:
+            plot_rectangle( ss.xx[0], ss.yy[0], ss.xx[1], ss.yy[1], style=style )
+        elif 'rotbox' == shape:
+            plot_box( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], ss.ang[0], style=style )
+        elif 'sector' == shape:
+            plot_pie( ss.xx[0], ss.yy[0], 0, 99999, ss.ang[0], ss.ang[1], style=style )
+        else:
+            raise TypeError("Unknown shape type : {}".format(shape))
+
