@@ -144,7 +144,8 @@ class EnhancedShape( object ):
     All regions are composed of simple geometric shapes (even 1 region with only
     1 shape is still a EnhancedRegion() ).
 
-    This object isn't meant to be exposed to users
+    Users cannot manipulate an individual shape's properties
+
     """
 
     _precise_string = "{:.12g}"  # Format string for double values when printed
@@ -166,31 +167,37 @@ class EnhancedShape( object ):
     def xx(self):
         """Get the X values for the shape"""
         return self._xx
+
     
     @property
     def yy(self):
         """Get the Y values for the shape"""
         return self._yy
+
         
     @property
     def rad(self):
         """Get the radii of the shape"""
         return self._rad
 
+
     @property
     def ang(self):
         """Get the angle of the shape"""
         return self._ang
+
 
     @property
     def shape(self):
         """Get the shape name"""
         return self._shape
 
+
     @property
     def include(self):
         """Get the include flag"""
         return self._include
+
 
     @property
     def logic(self):
@@ -280,8 +287,10 @@ class EnhancedShape( object ):
     def _set_logic(self, val ):
         self._logic = val
 
+
     def __str__(self):
         raise NotImplementedError("Implement this in the derived classes")
+
 
     def __repr__(self):
         return str(self)
@@ -361,6 +370,8 @@ class EnhancedRegion( object ):
     with AND and OR logical operators.
 
     """
+
+    # This provides a mapping between shape name and the class of the object to create
     _shape_classes = { 'annulus': Annulus,
                'box' : Box,
                'circle' : Circle,
@@ -591,7 +602,7 @@ class EnhancedRegion( object ):
     
 
     def __getitem__(self, idx ):
-        """Returns the logic and shape as index"""
+        """Returns a new region with the shape at index"""
         try:
             shape = self.shapes[idx]
         except IndexError, e:
@@ -843,7 +854,7 @@ def region( filename ):
         if not retval:
             raise IOError("try with a region()")
         return EnhancedRegion(retval)
-    except Exception, E:
+    except IOError, E:
         try:
             retval = cxcdm_lib.dmRegParse( c_char_p("region({})".format(str(filename)) ))
             if not retval:
