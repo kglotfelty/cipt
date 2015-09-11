@@ -114,28 +114,6 @@ cxcdm_lib.dmSubspaceColOpen.restype = c_void_p
 cxcdm_lib.dmTableWriteRegion.restype = c_void_p
 
 
-
-# Adds plotting capability to each shape
-try:
-    import chips_contrib.plot_shapes as plt
-    def with_plotting(plot_fun, engine=plt):
-        """Decorator to check for plotting engine"""
-        def plot_wrap(self):
-            if not engine:
-                return
-            plot_fun(self, engine)
-        return plot_wrap
-except:
-    import warnings as warn
-    warn.warn("Cannot locate chips_contrib.plot_shape module.  Region plotting will not be available.")
-    plt = None
-    def with_plotting(plot_fun):
-        """No plotting available"""
-        def plot_wrap(self):
-            pass
-        return plot_wrap
-
-
 def wrap_vals( vv ):
     """Utility to wrap arrays to be pased in byreference"""
     if vv:
@@ -145,8 +123,11 @@ def wrap_vals( vv ):
     return retval
 
 
-
 from collections import namedtuple
+# These provide the enumerated values in the region lib private header file.
+
+# The 'val' is the value passed to the region_lib, the 'str' is the
+# value that is printed
 ShapeOperation = namedtuple("ShapeOperation", ['val', 'str'] )
 opAND = ShapeOperation( 0, _AND_ )
 opOR = ShapeOperation( 1, _OR_ )
@@ -305,20 +286,11 @@ class EnhancedShape( object ):
     def __repr__(self):
         return str(self)
 
-    @with_plotting
-    def plot(self, engine):
-        raise NotImplementedError("Implement this in the derived classes")
-
 
 class Annulus(EnhancedShape):
     """An annulus is defined by x_center, y_center, inner_radius, outer_radius"""
     def __str__( self ):
         return self._format_string("{i}{n}({x0},{y0},{r0},{r1})")
-
-
-    @with_plotting
-    def plot(self, engine):
-        engine.plot_annulus( self.xx[0], self.yy[0], self.rad[0], self.rad[1] )
 
 
 class Box(EnhancedShape):
@@ -327,20 +299,10 @@ class Box(EnhancedShape):
         return self._format_string("{i}{n}({x0},{y0},{r0},{r1})")
 
 
-    @with_plotting
-    def plot(self,engine):
-        engine.plot_box( self.xx[0], self.yy[0], self.rad[0], self.rad[1] )
-
-
 class Circle(EnhancedShape):
     """A circle is defined by x_center, y_center, radius"""
     def __str__( self ):
         return self._format_string("{i}{n}({x0},{y0},{r0})")
-
-
-    @with_plotting
-    def plot(self,engine):
-        engine.plot_circle( self.xx[0], self.yy[0], self.rad[0])
 
 
 class Ellipse(EnhancedShape):
@@ -348,21 +310,11 @@ class Ellipse(EnhancedShape):
     def __str__( self ):
         return self._format_string("{i}{n}({x0},{y0},{r0},{r1},{a0})")
         
-        
-    @with_plotting
-    def plot(self,engine):
-        engine.plot_ellipse( self.xx[0], self.yy[0], self.rad[0], self.rad[1], self.ang[0])
-
 
 class Field(EnhancedShape):
     """A field is defined to be the entire R^2 dataspace"""
     def __str__( self ):
         return self._format_string("{i}{n}()")
-
-
-    @with_plotting
-    def plot(self,engine):
-        pass
 
 
 class Pie(EnhancedShape):
@@ -371,20 +323,10 @@ class Pie(EnhancedShape):
         return self._format_string("{i}{n}({x0},{y0},{r0},{r1},{a0},{a1})")
         
 
-    @with_plotting
-    def plot(self,engine):
-        engine.plot_pie( self.xx[0], self.yy[0], self.rad[0], self.rad[1], self.ang[0], self.ang[1])
-
-
 class Point(EnhancedShape):
     """A point is defined by x_center, y_center"""
     def __str__( self ):
         return self._format_string("{i}{n}({x0},{y0})")
-
-
-    @with_plotting
-    def plot(self,engine):
-        pass
 
 
 class Polygon(EnhancedShape):
@@ -393,20 +335,10 @@ class Polygon(EnhancedShape):
         return self._format_string("{i}{n}({xy})")
 
 
-    @with_plotting
-    def plot(self,engine):
-        engine.plot_polygon(self.xx, self.yy)
-
-
 class Rectangle(EnhancedShape):
     """A Polygon is defined as lower_left_x,lower_left_y,upper_right_x,upper_right_y"""
     def __str__( self ):
         return self._format_string("{i}{n}({x0},{y0},{x1},{y1})")
-
-
-    @with_plotting
-    def plot(self,engine):
-        engine.plot_rectangle( self.xx[0], self.yy[0], self.xx[1], self.yy[1] )
 
 
 class Rotbox(EnhancedShape):
@@ -415,22 +347,12 @@ class Rotbox(EnhancedShape):
         return self._format_string("{i}{n}({x0},{y0},{r0},{r1},{a0})")
 
 
-    @with_plotting
-    def plot(self,engine):
-        engine.plot_box( self.xx[0], self.yy[0], self.rad[0], self.rad[1], self.ang[0])
-
-
 class Sector(EnhancedShape):
     """A Sector is defined by x_center, y_center, start_angle, stop_angle"""
     def __str__( self ):
         return self._format_string("{i}{n}({x0},{y0},{a0},{a1})")
 
-
-    @with_plotting
-    def plot(self,engine):
-        engine.plot_pie( self.xx[0], self.yy[0], 0.0, 999999.9, self.ang[0], self.ang[1])
-
-
+# --------------------------------------
 
 class EnhancedRegion( object ):
     """
@@ -583,22 +505,6 @@ class EnhancedRegion( object ):
         Determine if x,y pair is inside the region
         """
         return (1 == region_lib.regInsideRegion(self._ptr, c_double(x), c_double(y)))
-
-
-    def plot( self ):
-        """
-        Plot the region by plotting each shape, if plotting is
-        available.
-        """
-        bad = 0
-        for s in self.shapes:
-            try:
-                s.plot()
-            except:
-                bad = bad+1
-
-        if bad != 0:
-            print "Warning: {} shapes could not be plotted".format(bad)
 
 
     def __del__(self):
@@ -1004,7 +910,6 @@ def test():
     z = region("/data/lenin2/export/byobsid/repro/ds9.reg")
     print z
     z.write("goo.reg")
-    #z.plot()
 
     cc = region("/data/lenin2/Test/4.8b1/Regression/ciao4.8b1_linux64/dmcontour/04/dmcontour_4.fits")
     print len(cc)
@@ -1027,6 +932,10 @@ def test():
 
     q = dss('/data/lenin2/Projects/PIMMS/Doc/9768/repro/todetect/goo.fits')
     print len(q)
+    print q[0]
+    print q.index(q[0])
+    print q[0] in q
+    
 
 
 #__all__.append("test")
