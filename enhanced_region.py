@@ -225,8 +225,8 @@ class EnhancedShape( object ):
         ox = (c_double * npts)()
         oy = (c_double * npts)()
         region_lib.regShapeGetPoints( self._ptr, byref(ox), byref(oy), c_long( npts ))
-        self._xx = [x for x in ox]
-        self._yy = [y for y in oy]
+        self._xx = tuple([x for x in ox])  # tuples are immutable 
+        self._yy = tuple([y for y in oy])
 
 
     def _get_radii(self):
@@ -236,7 +236,7 @@ class EnhancedShape( object ):
         nrad = region_lib.regShapeRadii( self._ptr )
         outr = (c_double * nrad)()
         region_lib.regShapeGetRadii( self._ptr, byref(outr) )
-        self._rad = [r for r in outr]
+        self._rad = tuple([r for r in outr])
 
 
     def _get_angle(self):
@@ -246,7 +246,7 @@ class EnhancedShape( object ):
         nang = region_lib.regShapeAngles( self._ptr )
         oa = (c_double*nang)()
         region_lib.regShapeGetAngles( self._ptr, byref(oa))
-        self._ang = [ a for a in oa ]
+        self._ang = tuple([ a for a in oa ])
 
 
     def _get_component(self):
@@ -449,6 +449,7 @@ class EnhancedRegion( object ):
                 self._shapes.append( new_shape )
             else:
                 raise ValueError("Unknown shape name {}".format(shape_name))
+        self._shapes = tuple(self._shapes)
 
 
     def _determine_logic(self):
