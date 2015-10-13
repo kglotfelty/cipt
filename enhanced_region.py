@@ -730,7 +730,8 @@ def SimpleGeometricShapes( name_as_string, xx, yy, radius, angle ):
     vptr = c_void_p(new_ptr)
     region_lib.regAppendShape( vptr,
                         c_char_p(name_as_string) ,
-                        c_int(incINCLUDE.val), c_int(opNOOP.val),
+                        c_int(incINCLUDE.val), 
+                        c_int(opNOOP.val),
                         wrap_vals(xx),
                         wrap_vals(yy),
                         c_long( len(xx) ),
