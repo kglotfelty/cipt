@@ -95,8 +95,8 @@ region_lib.regGetShapeNo.restype = c_void_p
 region_lib.regInsideRegion.restype = c_int
 region_lib.regIntersectRegion.restype = c_void_p
 region_lib.regInvert.restype = c_void_p
-region_lib.regShapeAngles.restype = c_long
-region_lib.regShapeRadii.restype = c_long
+#region_lib.regShapeAngles.restype = c_long
+#region_lib.regShapeRadii.restype = c_long
 region_lib.regShapeGetAngles.restype = c_long 
 region_lib.regShapeGetComponent.restype = c_long
 region_lib.regShapeGetName.restype = c_int
@@ -213,7 +213,7 @@ class EnhancedShape( object ):
         shape_name = create_string_buffer(100)
         iflag = region_lib.regShapeGetName(self._ptr, shape_name, 99)
         self._shape = shape_name.value.lower()
-        self._include = incEXCLUDE if 0 == iflag else incINCLUDE
+        self._include = incEXCLUDE if incEXCLUDE.val == iflag else incINCLUDE
 
 
     def _get_points(self):
@@ -233,8 +233,8 @@ class EnhancedShape( object ):
         """
         Gets the radius/radii from the regShape pointer
         """
-        nrad = region_lib.regShapeRadii( self._ptr )
-        outr = (c_double * nrad)()
+        #nrad = region_lib.regShapeRadii( self._ptr )
+        outr = (c_double * self._nrad)()
         region_lib.regShapeGetRadii( self._ptr, byref(outr) )
         self._rad = tuple([r for r in outr])
 
@@ -243,8 +243,8 @@ class EnhancedShape( object ):
         """
         Gets the angle/angles from the regShape pointer
         """
-        nang = region_lib.regShapeAngles( self._ptr )
-        oa = (c_double*nang)()
+        #nang = region_lib.regShapeAngles( self._ptr )
+        oa = (c_double*self._nang)()
         region_lib.regShapeGetAngles( self._ptr, byref(oa))
         self._ang = tuple([ a for a in oa ])
 
@@ -298,66 +298,110 @@ class EnhancedShape( object ):
 
 class Annulus(EnhancedShape):
     """An annulus is defined by x_center, y_center, inner_radius, outer_radius"""
+
+    _nang = 0
+    _nrad = 2
+
     def __str__( self ):
         return self._format_string("{i}{n}({x0},{y0},{r0},{r1})")
 
 
 class Box(EnhancedShape):
     """A box is defined by x_center, y_center, x_length, y_length"""
+
+    _nang = 0
+    _nrad = 2
+    
     def __str__( self ):
         return self._format_string("{i}{n}({x0},{y0},{r0},{r1})")
 
 
 class Circle(EnhancedShape):
     """A circle is defined by x_center, y_center, radius"""
+
+    _nang = 0
+    _nrad = 1
+
     def __str__( self ):
         return self._format_string("{i}{n}({x0},{y0},{r0})")
 
 
 class Ellipse(EnhancedShape):
     """An ellipse is defined by x_center, y_center, major_axis, minor_axis, and angle"""
+
+    _nang = 1
+    _nrad = 2
+
     def __str__( self ):
         return self._format_string("{i}{n}({x0},{y0},{r0},{r1},{a0})")
         
 
 class Field(EnhancedShape):
     """A field is defined to be the entire R^2 dataspace"""
+
+    _nang = 0
+    _nrad = 0
+
     def __str__( self ):
         return self._format_string("{i}{n}()")
 
 
 class Pie(EnhancedShape):
     """A Pie is defined by x_center, y_center, inner_radius, outer_radius, start_angle, stop_angle"""
+
+    _nang = 2
+    _nrad = 2
+
     def __str__( self ):
         return self._format_string("{i}{n}({x0},{y0},{r0},{r1},{a0},{a1})")
         
 
 class Point(EnhancedShape):
     """A point is defined by x_center, y_center"""
+
+    _nang = 0
+    _nrad = 0
+    
     def __str__( self ):
         return self._format_string("{i}{n}({x0},{y0})")
 
 
 class Polygon(EnhancedShape):
     """A Polygon is defined as x1,y1, x2,y2,x3,y3,..."""
+
+    _nang = 0
+    _nrad = 0
+
     def __str__( self ):
         return self._format_string("{i}{n}({xy})")
 
 
 class Rectangle(EnhancedShape):
     """A Polygon is defined as lower_left_x,lower_left_y,upper_right_x,upper_right_y"""
+
+    _nang = 0
+    _nrad = 0
+
     def __str__( self ):
         return self._format_string("{i}{n}({x0},{y0},{x1},{y1})")
 
 
 class Rotbox(EnhancedShape):
     """A Rotbox is defined as x_center, y_center, x_length, y_length, angle """
+
+    _nang = 1
+    _nrad = 2
+
     def __str__(self):
         return self._format_string("{i}{n}({x0},{y0},{r0},{r1},{a0})")
 
 
 class Sector(EnhancedShape):
     """A Sector is defined by x_center, y_center, start_angle, stop_angle"""
+
+    _nang = 2
+    _nrad = 0
+
     def __str__( self ):
         return self._format_string("{i}{n}({x0},{y0},{a0},{a1})")
 
@@ -951,7 +995,7 @@ def test():
     
 
 
-#__all__.append("test")
+__all__.append("test")
 
 
 
