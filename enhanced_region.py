@@ -732,14 +732,43 @@ class EnhancedRegion( object ):
         return retval
         
 
-    def tweak( self, dx=0, dy=0, stretch=1, rotate=0 ):
+    def tweak( self, dx=0, dy=0, stretch=1, pad=0, rotate=0 ):
         """
-        Create a copy of the current region, shape-by-shape.
-
-        Then apply tweaks to the x, y, r, angle parameters before
+        Create a copy of the current region, shape-by-shape and 
+        apply tweaks to the x, y, r, angle parameters before
         creating and returning a new region.
 
         Each tweak is applied to each shape separately
+
+        dx : each x coordinate is shifted by dx amount
+        dy : each y coordinate is shifted by dy amount
+        stretch: each radii is multiplied by the stretch amount
+        pad: the pad amount is added to each radii
+        rotate: the rotation angle 
+        
+        Note: rotate only applies to shapes with a rotation angle
+        parameter.  For example, a rectangle, unlike a box, does 
+        not have a rotation parameter.  
+        
+        Both strecth and pad are applied to the radii; first the
+        radii are stretched, then the pad is applied. 
+
+        When a 'box' is rotated, it will automatically be converted
+        into a 'rotbox'
+
+        Examples:
+        
+        >>> circle(0,0,10).tweak(dx=5,dy=-7,stretch=2,pad=3,rotate=45)
+        circle(5,-7,23)
+        
+        >>> ellipse(0,0,5,10,0).tweak(rotate=90)
+        ellipse(0,0,5,10,90)
+        
+        >>> box(0,0,5,5).tweak(rotate=45)
+        rotbox(0,0,5,5,45)
+
+        >>> polygon( 0,0, 0,10, 10,0 ).tweak(dx=5)
+        polygon(5,0,5,10,15,0,5,0)
         """
         copy_ptr = region_lib.regCreateEmptyRegion()
         vptr = c_void_p(copy_ptr)
@@ -751,11 +780,17 @@ class EnhancedRegion( object ):
 
             copy_xx = [ x+dx for x in shape.xx]
             copy_yy = [ y+dy for y in shape.yy]
-            copy_rr = [ r*stretch for r in shape.rad]
+            copy_rr = [ r*stretch+pad for r in shape.rad]
             copy_aa = [ a+rotate for a in shape.ang ]
 
+            if 0 != rotate and "box" == shape.shape.lower():
+                use_shape = "rotbox"
+                copy_aa = [ rotate ]
+            else:
+                use_shape = shape.shape
+
             region_lib.regAppendShape( vptr,
-                                c_char_p(shape.shape),
+                                c_char_p(use_shape),
                                 reg_inc, c_int(reg_math),
                                 wrap_vals( copy_xx ),
                                 wrap_vals( copy_yy ),
@@ -763,6 +798,9 @@ class EnhancedRegion( object ):
                                 wrap_vals( copy_rr ),
                                 wrap_vals( copy_aa ),
                                 None, None)
+            if region_lib.regGetNoShapes( vptr ) != ii+1:
+                raise ValueError("Problem creating region")
+
         return EnhancedRegion(copy_ptr)
 
 
@@ -983,7 +1021,7 @@ def test():
     print a == cc
 
     p = a+z+bb
-    q = p.tweak(dx=5).tweak(stretch=5).tweak(rotate=+45)
+    q = p.tweak(dx=5).tweak(stretch=5).tweak(rotate=+45).tweak(pad=3)
     print p
     print q
 
