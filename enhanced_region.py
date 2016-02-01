@@ -90,6 +90,7 @@ region_lib.regArea.restype = c_double
 region_lib.regCreateEmptyRegion.restype = c_void_p
 region_lib.regCompareRegion.restype = c_int
 region_lib.regCopyRegion.restype = c_void_p
+region_lib.regExtent.restype = c_int
 region_lib.regGetNoShapes.restype = c_long
 region_lib.regGetShapeNo.restype = c_void_p
 region_lib.regInsideRegion.restype = c_int
@@ -527,6 +528,24 @@ class EnhancedRegion( object ):
         DBL_MAX = sys.float_info.max
         fld = wrap_vals( [-DBL_MAX, DBL_MAX] )
         return region_lib.regArea( self._ptr, fld, fld, c_double(1.0) )
+
+
+    def extent( self ):
+        """
+        Determine the size of a bounding box around the region.
+        
+        Returns 2 list:  x limits and y limits
+        """
+        import sys as sys
+        DBL_MAX = sys.float_info.max
+        fld = wrap_vals( [-DBL_MAX, DBL_MAX] )
+        x_range = (c_double * 2)()
+        y_range = (c_double * 2)()
+        region_lib.regExtent( self._ptr, fld, fld, byref(x_range), byref( y_range) )
+        xx = tuple([ x for x in x_range ])
+        yy = tuple([ y for y in y_range ])
+
+        return xx, yy
 
 
     def write(self, filename, newline=False, fits=False):
