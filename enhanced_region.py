@@ -542,10 +542,13 @@ class EnhancedRegion( object ):
         x_range = (c_double * 2)()
         y_range = (c_double * 2)()
         region_lib.regExtent( self._ptr, fld, fld, byref(x_range), byref( y_range) )
-        xx = tuple([ x for x in x_range ])
-        yy = tuple([ y for y in y_range ])
 
-        return xx, yy
+        retval = { 'xlo' : x_range[0], 
+                   'xhi' : x_range[1],
+                   'ylo' : y_range[0],
+                   'yhi' : y_range[1] }
+
+        return retval
 
 
     def write(self, filename, newline=False, fits=False):
