@@ -458,7 +458,8 @@ class EnhancedRegion( object ):
         """
         self._classify_shapes()
         logic = self._determine_logic()
-        map( lambda s,l: s._set_logic(l), self._shapes, logic)
+        if self._shapes:
+            map( lambda s,l: s._set_logic(l), self._shapes, logic)
 
 
     @staticmethod
@@ -589,7 +590,8 @@ class EnhancedRegion( object ):
         """
         Use the self.dll which should exist during garbage collection.
         """
-        self._region_lib.regFree( self._ptr )
+        if hasattr( self, "_region_lib" ):
+            self._region_lib.regFree( self._ptr )
 
 
     def __add__(self,other):
