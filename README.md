@@ -6,11 +6,11 @@ they can be called within python in such a way that
 the actual file i/o is hidden from the user.
 
 ```python
->>> from ciao_contrib.cipt import *
->>> myimg = CIAOImage("foo.fits")
->>> scld = myimg.asinh()
->>> diff = myimg - scld
->>> diff.write("zoo.fits", clobber=True)
+from ciao_contrib.cipt import *
+myimg = CIAOImage("foo.fits")
+scld = myimg.asinh()
+diff = myimg - scld
+diff.write("zoo.fits", clobber=True)
 ```
 
 
