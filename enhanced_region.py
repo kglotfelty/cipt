@@ -60,6 +60,21 @@ circle(1000,1000,50)
 +box(1010,1010,50,100)
 
 
+Users can also get access to the individual shape properties
+(radius, centers, etc)
+
+>>> myreg = circle(10,-10,100)
+>>> mycir = myreg.shapes[0]
+>>> mycir.xx
+10
+>>> mycir.yy
+-10
+>>> mycir.rad
+100
+>>> mycir.include
+ShapeInclusion(val=1, str='')
+
+
 """
 
 
@@ -145,7 +160,8 @@ class EnhancedShape( object ):
     All regions are composed of simple geometric shapes (even 1 region with only
     1 shape is still a EnhancedRegion() ).
 
-    Users cannot manipulate an individual shape's properties
+    Users cannot manipulate an individual shape's properties.  They can 'tweak' 
+    the properties and create a new region.
 
     """
 
