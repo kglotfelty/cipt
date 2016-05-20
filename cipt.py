@@ -1439,7 +1439,35 @@ class CIAOImage( HistoryIMAGECrate ):
         except:
             raise
 
+    def js9(self):
+        """This doesn't work just yet"""
+        from IPython.display import display_html
+        import os
+        old = os.environ["ASCDS_WORK_PATH"]
+        os.environ["ASCDS_WORK_PATH"] = ""
+        with serialize_temp_crate( self) as img:
+            self.write("tmpname", clobber=True)
+            
+            """
+            from base64 import b64encode
+            
+            with open(img.name, "rb") as fp:
+                data = fp.read()
+            
+            coded = b64encode(data)
 
+            print len(coded)
+            print coded[0:10]
+            """
+            
+            
+            display_html("""<script type="text/javascript">
+              b64="tmpname";
+              JS9.RefreshImage(b64);
+              </script>""".format(os.path.basename(img.name)), raw=True )
+
+
+            
 
 
     
@@ -1641,7 +1669,8 @@ def serialize_temp_crate( data2save ):
     
     """
     import tempfile as tempfile 
-    nn = tempfile.NamedTemporaryFile( )
+    import os
+    nn = tempfile.NamedTemporaryFile( dir=os.environ["ASCDS_WORK_PATH"] )
     try:
         data2save.write(nn.name, clobber=True )
     except:
