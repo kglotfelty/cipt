@@ -16,7 +16,6 @@ from ciao_contrib.runtool import make_tool
 import numpy as np
 
 
-
 class CIAOImage( HistoryIMAGECrate ):
     """
     CIAO Image 
@@ -1157,6 +1156,12 @@ class CIAOImage( HistoryIMAGECrate ):
         return _run_cmd( dmregrid2, self, xscale=sx, yscale=sy, rotx=center[0], roty=center[1], **kwargs )
 
     def blob( self, threshold=None, srconly=True):
+        try:
+            import resource as resource
+            resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+        except:
+            pass
+
         dmimgblob=make_tool("dmimgblob")
         if None == threshold:
             from sys import float_info
@@ -1440,35 +1445,45 @@ class CIAOImage( HistoryIMAGECrate ):
             raise
 
     def js9(self):
-        """This doesn't work just yet"""
+        """display the file inline in a running JS9 viewer
+
+        This is more than a bit hacky since I have to
+        I tried writing to /tmp but out-of web space.
+        I tried sending as base64 but couldn't figure out syntax/protocal.
+        I tried starting separate web server, but ran into "cross site" 
+        security problems.
+        
+        So ... this is what I've got.  I write a temp file to current dir
+        and then have thread to delay deletion for 10 seconds.
+
+        Note: need a unique temp name or file is not reloaded.
+
+        """
+
         from IPython.display import display_html
+        import threading
         import os
+
+        def delay_for_delete():
+            import time
+            time.sleep(10)
+
         old = os.environ["ASCDS_WORK_PATH"]
         os.environ["ASCDS_WORK_PATH"] = ""
         with serialize_temp_crate( self) as img:
-            self.write("tmpname", clobber=True)
-            
-            """
-            from base64 import b64encode
-            
-            with open(img.name, "rb") as fp:
-                data = fp.read()
-            
-            coded = b64encode(data)
+            thrd = threading.Thread( target=delay_for_delete)
+            thrd.start()                
+            cmd = """<script type="text/javascript">
+              b64="{}";
+              JS9.Load(b64);
+              </script>""".format(os.path.basename(img.name))
 
-            print len(coded)
-            print coded[0:10]
-            """
-            
-            
-            display_html("""<script type="text/javascript">
-              b64="tmpname";
-              JS9.RefreshImage(b64);
-              </script>""".format(os.path.basename(img.name)), raw=True )
+            display_html(cmd, raw=True )
+            thrd.join() # after this finishes file is deleted
 
-
-            
-
+        # Restore orignal tmp dir
+        os.environ["ASCDS_WORK_PATH"] = old
+        
 
     
     def _test_(self):
@@ -1670,7 +1685,7 @@ def serialize_temp_crate( data2save ):
     """
     import tempfile as tempfile 
     import os
-    nn = tempfile.NamedTemporaryFile( dir=os.environ["ASCDS_WORK_PATH"] )
+    nn = tempfile.NamedTemporaryFile( dir=os.environ["ASCDS_WORK_PATH"], suffix=".fits" )
     try:
         data2save.write(nn.name, clobber=True )
     except:
