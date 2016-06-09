@@ -702,7 +702,7 @@ class EnhancedRegion( object ):
         reg_inc = shape.include.val
         region_lib.regAppendShape( vptr,
                             c_char_p(shape.shape),
-                            reg_inc, c_int(opNOOP.val),
+                            c_int(reg_inc), c_int(opNOOP.val),
                             wrap_vals( shape.xx ),
                             wrap_vals( shape.yy ),
                             c_long( len(shape.xx) ),
@@ -831,7 +831,7 @@ class EnhancedRegion( object ):
 
             region_lib.regAppendShape( vptr,
                                 c_char_p(use_shape),
-                                reg_inc, c_int(reg_math),
+                                c_int(reg_inc), c_int(reg_math),
                                 wrap_vals( copy_xx ),
                                 wrap_vals( copy_yy ),
                                 c_long( len(copy_xx) ),
@@ -1046,7 +1046,7 @@ def test():
     print z
     z.write("goo.reg")
 
-    cc = region("/data/lenin2/Test/4.8b1/Regression/ciao4.8b1_linux64/dmcontour/04/dmcontour_4.fits")
+    cc = region("/lenin2.real/Projects/ImproveRegression/Test/ciaox_20160125/dmcontour/04/dmcontour_4.fits")
     print len(cc)
     cc.write("cntr.reg")
 
@@ -1073,7 +1073,7 @@ def test():
     
 
 
-__all__.append("test")
+#__all__.append("test")
 
 
 
