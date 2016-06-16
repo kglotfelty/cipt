@@ -854,11 +854,15 @@ class EnhancedRegion( object ):
         
         Radii and angles are transformed by computing the scaling function
         for a slightly shifted location and finding the shift and
-        rotation in the transformed coordinates.
+        rotation in the transformed coordinates.  This isn't
+        technically correct but without wanting to pass around 
+        the scale separately this is pretty close.
+        The error here is probably less than the assumption that a 
+        circle in tangent plane is also a circle in ra/dec.
         
         """
-        from math import atan2, hypot
-        _dy = 1.0/3600.0
+        from math import atan2, hypot, degrees
+        _dy = 1/3600.0
 
         copy_ptr = region_lib.regCreateEmptyRegion()
         vptr = c_void_p(copy_ptr)
@@ -883,12 +887,10 @@ class EnhancedRegion( object ):
             
             xfrm_xy = xfunc(copy_xy)
             delt_xx, delt_yy = zip(*xfrm_xy)
-
-
             stretch = hypot((delt_xx[0]-xfrm_xx[0]),(delt_yy[0]-xfrm_yy[0]))/_dy
             xfrm_rr = [ r*stretch for r in shape.rad]
 
-            rotate = atan2((delt_yy[0]-xfrm_yy[0]),(delt_xx[0]-xfrm_xx[0]))
+            rotate = degrees(atan2((delt_xx[0]-xfrm_xx[0]),(delt_yy[0]-xfrm_yy[0])))
             xfrm_aa = [ a+rotate for a in shape.ang ]
 
             if 0 != rotate and "box" == shape.shape.lower():
