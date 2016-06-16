@@ -843,6 +843,7 @@ class EnhancedRegion( object ):
 
         return EnhancedRegion(copy_ptr)
 
+
     def xform( self, xfunc ):
         """
         Create a copy of the current region, shape-by-shape and 
@@ -909,6 +910,8 @@ class EnhancedRegion( object ):
                 raise ValueError("Problem creating region")
 
         return EnhancedRegion(copy_ptr)
+
+
 
 def SimpleGeometricShapes( name_as_string, xx, yy, radius, angle ):
     """
