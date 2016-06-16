@@ -843,6 +843,72 @@ class EnhancedRegion( object ):
 
         return EnhancedRegion(copy_ptr)
 
+    def xform( self, xfunc ):
+        """
+        Create a copy of the current region, shape-by-shape and 
+        apply the transformation function to the parameters.
+        
+        The x,y are transformed by applying the xfunc
+        directly to the values
+        
+        Radii and angles are transformed by computing the scaling function
+        for a slightly shifted location and finding the shift and
+        rotation in the transformed coordinates.
+        
+        """
+        from math import atan2, hypot
+        _dy = 1.0/3600.0
+
+        copy_ptr = region_lib.regCreateEmptyRegion()
+        vptr = c_void_p(copy_ptr)
+        for ii in range( len(self) ):
+            shape = self.shapes[ii]
+
+            reg_math =shape.logic.val
+            reg_inc = shape.include.val
+
+            copy_xx = [ x for x in shape.xx]
+            copy_yy = [ y for y in shape.yy]
+
+            copy_xy = zip(copy_xx, copy_yy)
+            
+            # Apply the function to the x,y values directly
+            xfrm_xy = xfunc(copy_xy)
+            xfrm_xx, xfrm_yy = zip(*xfrm_xy)
+
+            # Get the scale and the angle
+            copy_yy = [ y+_dy for x in shape.yy]
+            copy_xy = zip(copy_xx, copy_yy)
+            
+            xfrm_xy = xfunc(copy_xy)
+            delt_xx, delt_yy = zip(*xfrm_xy)
+
+
+            stretch = hypot((delt_xx[0]-xfrm_xx[0]),(delt_yy[0]-xfrm_yy[0]))/_dy
+            xfrm_rr = [ r*stretch for r in shape.rad]
+
+            rotate = atan2((delt_yy[0]-xfrm_yy[0]),(delt_xx[0]-xfrm_xx[0]))
+            xfrm_aa = [ a+rotate for a in shape.ang ]
+
+            if 0 != rotate and "box" == shape.shape.lower():
+                use_shape = "rotbox"
+                copy_aa = [ rotate ]
+            else:
+                use_shape = shape.shape
+
+            region_lib.regAppendShape( vptr,
+                                c_char_p(use_shape),
+                                c_int(reg_inc), c_int(reg_math),
+                                wrap_vals( xfrm_xx ),
+                                wrap_vals( xfrm_yy ),
+                                c_long( len(xfrm_xx) ),
+                                wrap_vals( xfrm_rr ),
+                                wrap_vals( xfrm_aa ),
+                                None, None)
+            if region_lib.regGetNoShapes( vptr ) != ii+1:
+                raise ValueError("Problem creating region")
+
+        return EnhancedRegion(copy_ptr)
 
 def SimpleGeometricShapes( name_as_string, xx, yy, radius, angle ):
     """
@@ -1070,6 +1136,16 @@ def test():
     print q[0]
     print q.index(q[0])
     print q[0] in q
+
+
+    c = circle(4274.5,3954.5,5)
+    img = read_file("img.fits")
+    wcs = img.get_transform("eqpos")
+    print c
+    print c.xform(wcs.apply)
+    print c.xform(wcs.apply).xform(wcs.invert)
+    
+
     
 
 
