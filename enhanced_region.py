@@ -87,14 +87,17 @@ _NOT_ = "!"
 _BLANK_ = ""
 
 
+import os
+lib = os.environ["ASCDS_INSTALL"]+"/lib/"
+
 from ctypes import *
 try:
-    region_lib = cdll.LoadLibrary('libregion.so')
-    cxcdm_lib = cdll.LoadLibrary('libascdm.so')
+    region_lib = cdll.LoadLibrary(lib+'libregion.so')
+    cxcdm_lib = cdll.LoadLibrary(lib+'libascdm.so')
 except:
     try: # OSX
-        region_lib = cdll.LoadLibrary('libregion.dylib')
-        cxcdm_lib = cdll.LoadLibrary('libascdm.dylib')
+        region_lib = cdll.LoadLibrary(lib+'libregion.dylib')
+        cxcdm_lib = cdll.LoadLibrary(lib+'libascdm.dylib')
     except:
         raise ImportError("Cannot load region library")
 
