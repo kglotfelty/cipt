@@ -537,17 +537,22 @@ class EnhancedRegion( object ):
         return logic
 
 
-    def area( self ):
+    def area( self, res=1.0 ):
         """Determine the region area.
 
         TODO: make can pass in field bound box and bin-size parameters.
         There is also a routine that forces pixelated area we could
         optionally call
         """
-        import sys as sys
-        DBL_MAX = sys.float_info.max
-        fld = wrap_vals( [-DBL_MAX, DBL_MAX] )
-        return region_lib.regArea( self._ptr, fld, fld, c_double(1.0) )
+        ###import sys as sys
+        ###DBL_MAX = sys.float_info.max
+        ###fld = wrap_vals( [-DBL_MAX, DBL_MAX] )
+
+        xtnd = self.extent()
+        fldx = wrap_vals( [ xtnd["xlo"], xtnd["xhi"] ] )
+        fldy = wrap_vals( [ xtnd["ylo"], xtnd["yhi"] ] )
+
+        return region_lib.regArea( self._ptr, fldx, fldy, c_double(res) )
 
 
     def extent( self ):
