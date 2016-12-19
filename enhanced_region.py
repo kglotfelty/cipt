@@ -1151,6 +1151,7 @@ def test():
     print q[0] in q
 
 
+    from pycrates import read_file
     c = circle(4274.5,3954.5,5)
     img = read_file("img.fits")
     wcs = img.get_transform("eqpos")
@@ -1162,7 +1163,7 @@ def test():
     
 
 
-#__all__.append("test")
+__all__.append("test")
 
 
 
