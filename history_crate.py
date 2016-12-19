@@ -26,7 +26,7 @@ class HistoryCrate(object):
 
         self.history = []
         tab = dmBlockOpen( filename )
-        for ii in xrange( 1, dmBlockGetNoKeys(tab)+1 ):
+        for ii in range( 1, dmBlockGetNoKeys(tab)+1 ):
             dmBlockMoveToKey(tab,ii)
             while True:
                 hist = dmBlockReadComment(tab)

@@ -44,8 +44,8 @@ class Crateify( object ):
                         tool( mycmd, infile.name, outfile.name, **kwargs )
                         newcrate = self.reader( outfile.name )
                         return newcrate
-            except Exception, E:
-                print E
+            except Exception as E:
+                print(E)
                 raise E
         return write_read_crate
 

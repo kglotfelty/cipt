@@ -89,7 +89,7 @@ def add_region( xx, yy, style, delta=0 ):
             chips.add_curve( xx, yy, style)
         else:
             chips.add_region(xx,yy, style)
-    except Exception, e:
+    except Exception as e:
         delta = delta + 0.1
         xp, yp = simplify_polygon( xx, yy, delta=delta)
         add_region( xp, yp, style, delta=delta )

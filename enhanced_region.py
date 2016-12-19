@@ -34,15 +34,15 @@ use them in logical operations, and modify them
 >>> a = circle(1000,1000,50)
 >>> b = box(1010,1010,50,100)
 >>> c = a+b
->>> print c
+>>> print(c)
 circle(1000,1000,50)+box(1010,1010,50,100)
->>> print c.area()
+>>> print(c.area())
 8574.0
 >>> d = a*b
->>> print d
+>>> print(d)
 circle(1000,1000,50)*box(1010,1010,50,100)
 >>> e = a-b
->>> print e
+>>> print(e)
 circle(1000,1000,50)*!box(1010,1010,50,100)
 
 >>> a in c
@@ -698,7 +698,7 @@ class EnhancedRegion( object ):
         """Returns a new region with the shape at index"""
         try:
             shape = self.shapes[idx]
-        except IndexError, e:
+        except IndexError as e:
             raise IndexError("Invalid index value for this region")
         except:
             raise
@@ -1057,7 +1057,7 @@ def region( filename ):
         if not retval:
             raise IOError("try with a region()")
         return EnhancedRegion(retval)
-    except IOError, E:
+    except IOError as E:
         try:
             retval = cxcdm_lib.dmRegParse( c_char_p("region({})".format(str(filename)) ))
             if not retval:
@@ -1102,62 +1102,62 @@ def dss( filename, colname="sky", component=1 ):
 
     
 def test():
-    print annulus(1,2,3,4)
-    print box(1,2,3,4)
-    print box(1,2,3,4,5)
-    print circle(1,2,3)
-    print ellipse(1,2,3,4,5)
-    print ellipse(1,2,3,4)
-    print field()
-    print pie(1,2,3,4,5,6)
-    print point(1,2)
-    print polygon( 1,2,3,4,5,6)
-    print polygon( [1,2,3],[4,5,6])
-    print rectangle(1,2,3,4)
-    print rotbox(1,2,3,4,5)
-    print sector(1,2,3,4)
+    print(annulus(1,2,3,4))
+    print(box(1,2,3,4))
+    print(box(1,2,3,4,5))
+    print(circle(1,2,3))
+    print(ellipse(1,2,3,4,5))
+    print(ellipse(1,2,3,4))
+    print(field())
+    print(pie(1,2,3,4,5,6))
+    print(point(1,2))
+    print(polygon( 1,2,3,4,5,6))
+    print(polygon( [1,2,3],[4,5,6]))
+    print(rectangle(1,2,3,4))
+    print(rotbox(1,2,3,4,5))
+    print(sector(1,2,3,4))
 
-    print circle(10,10,+123)+box(10,10,1,1)
-    print circle(10,10,100)*box(10,10,1,1)
-    print circle(10,10,100)-box(10,10,1,1)
-    print -circle(50,50,100)
+    print(circle(10,10,+123)+box(10,10,1,1))
+    print(circle(10,10,100)*box(10,10,1,1))
+    print(circle(10,10,100)-box(10,10,1,1))
+    print(-circle(50,50,100))
     z = region("/data/lenin2/export/byobsid/repro/ds9.reg")
-    print z
+    print(z)
     z.write("goo.reg")
 
     cc = region("/lenin2.real/Projects/ImproveRegression/Test/ciaox_20160125/dmcontour/04/dmcontour_4.fits")
-    print len(cc)
+    print(len(cc))
     cc.write("cntr.reg")
 
     a = pie(0,0, 1, 2, -45, 56)
     d = pie(0,0, 1, 2, -45, 56)
     b = a.__copy__()
     bb = box(5,5,10,20)
-    print a
-    print b
-    print a == b
-    print a == d
-    print a == cc
+    print(a)
+    print(b)
+    print(a == b)
+    print(a == d)
+    print(a == cc)
 
     p = a+z+bb
     q = p.tweak(dx=5).tweak(stretch=5).tweak(rotate=+45).tweak(pad=3)
-    print p
-    print q
+    print(p)
+    print(q)
 
     q = dss('/data/lenin2/Projects/PIMMS/Doc/9768/repro/todetect/goo.fits')
-    print len(q)
-    print q[0]
-    print q.index(q[0])
-    print q[0] in q
+    print(len(q))
+    print(q[0])
+    print(q.index(q[0]))
+    print(q[0] in q)
 
 
     from pycrates import read_file
     c = circle(4274.5,3954.5,5)
     img = read_file("img.fits")
     wcs = img.get_transform("eqpos")
-    print c
-    print c.xform(wcs.apply)
-    print c.xform(wcs.apply).xform(wcs.invert)
+    print(c)
+    print(c.xform(wcs.apply))
+    print(c.xform(wcs.apply).xform(wcs.invert))
     
 
     

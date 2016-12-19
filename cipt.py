@@ -936,8 +936,8 @@ class CIAOImage( HistoryIMAGECrate ):
         try:
             spec = kernel.get_spec()
             norm = kernel.get_norm()
-        except Exception, e:
-            print "Need to supply a Kernel object"
+        except Exception as e:
+            print("Need to supply a Kernel object")
             raise e        
         out = _run_cmd( aconvolve, self, kernelsp=spec, norm=norm, method=method, **kwargs)
         return out
@@ -1439,7 +1439,7 @@ class CIAOImage( HistoryIMAGECrate ):
             return d
             
         except ImportError:
-            print "Please install pyds9 to enable this feature"
+            print("Please install pyds9 to enable this feature")
             return None
         except:
             raise
@@ -1541,7 +1541,7 @@ class CIAOImage( HistoryIMAGECrate ):
             self.filter(box(300,400,100,200), coord="(#1,#2)").write("box100_200.out", clobber=True)
             self.filter(box(300,100,100,45), coord="(#1,#2)").write("box100_rot45.out",clobber=True)
             self.filter(ellipse(300,400,100,200), coord="(#1,#2)").write("ellipse100_200.out", clobber=True)
-            self.filter(point(546,333), coord="(#1,#2)").write("point.out",clobber=True)
+            self.filter(point(346,333), coord="(#1,#2)").write("point.out",clobber=True)
             self.filter(pie(300,300,30,100,-45,45), coord="(#1,#2)").write("pie.out",clobber=True)
             self.filter(sector(0,0,10,70), coord="(#1,#2)").write("sector.out",clobber=True)
             self.filter(rectangle( 100,100,300,400), coord="(#1,#2)").write("rectangle.out",clobber=True)
@@ -1628,6 +1628,7 @@ class CIAOImage( HistoryIMAGECrate ):
         
 
 
+
 @Crateify(CIAOImage)
 def _run_cmd( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
 
@@ -1639,9 +1640,9 @@ def _run_cmd( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
     for k in kwargs:
         setattr( mycmd, k, kwargs[k] )
 
-    print mycmd
+    print(mycmd)
     x = mycmd()
-    if x : print x 
+    if x : print(x)
 
 
 @Crateify(region)
@@ -1655,9 +1656,9 @@ def _get_reg( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
     for k in kwargs:
         setattr( mycmd, k, kwargs[k] )
 
-    print mycmd
+    print(mycmd)
     x = mycmd()
-    if x : print x 
+    if x : print(x)
 
 
 @Crateify(HistoryTABLECrate)
@@ -1671,9 +1672,9 @@ def _get_table( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
     for k in kwargs:
         setattr( mycmd, k, kwargs[k] )
 
-    print mycmd
+    print(mycmd)
     x = mycmd()
-    if x : print x 
+    if x : print(x)
 
 
 
@@ -1696,6 +1697,11 @@ def serialize_temp_crate( data2save ):
 
         
 
+def test():    
+    CIAOImage("img.fits")._test_()
+    
+
+__all__.append("test")
 
 
 
