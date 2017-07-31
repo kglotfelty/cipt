@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 import pycrates
 
@@ -29,7 +30,6 @@ class Crateify( object ):
         """        
         """
         self.reader = readfn
-        pass
     
     def __call__( self, tool ):
         """        

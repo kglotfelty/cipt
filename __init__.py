@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 """
 CIAO Image processing toolkit
 
@@ -10,6 +12,6 @@ no user stuff).
 
 """
 
-from cipt import CIAOImage
-from enhanced_region import *
+from .cipt import CIAOImage
+from .enhanced_region import *
 

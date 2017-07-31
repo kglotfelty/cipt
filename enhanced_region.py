@@ -147,12 +147,12 @@ from collections import namedtuple
 
 # The 'val' is the value passed to the region_lib, the 'str' is the
 # value that is printed
-ShapeOperation = namedtuple("ShapeOperation", ['val', 'str'] )
+ShapeOperation = namedtuple("ShapeOperation", ['val', 'as_str'] )
 opAND = ShapeOperation( 0, _AND_ )
 opOR = ShapeOperation( 1, _OR_ )
 opNOOP = ShapeOperation( 1, _BLANK_ )
 
-ShapeInclusion = namedtuple("ShapeInclusion", ['val', 'str'] )
+ShapeInclusion = namedtuple("ShapeInclusion", ['val', 'as_str'] )
 incINCLUDE = ShapeInclusion( 1, _BLANK_ )
 incEXCLUDE = ShapeInclusion( 0, _NOT_ )
 
@@ -296,11 +296,12 @@ class EnhancedShape( object ):
             'r1' : self.rad_str[1] if len(self.rad_str) > 1 else None,
             'a0' : self.ang_str[0] if len(self.ang_str) > 0 else None,
             'a1' : self.ang_str[1] if len(self.ang_str) > 1 else None,
-            'i'  : self.include.str,
-            'n'  : self.shape,
+            'i'  : self.include.as_str,
+            'n'  : self.shape.decode("ascii"),
             'xy' : ",".join([ "{},{}".format(x,y) for x,y in zip( self.xx_str, self.yy_str ) ])
             }
-            
+        #print("zaphod")
+        #print(self.fmt_vals)
         return fmt_str.format( **self.fmt_vals )
 
 
@@ -463,7 +464,7 @@ class EnhancedRegion( object ):
 
     def __str__( self ):
         """Construct the string value from the shapes & logic"""
-        retval = _BLANK_.join( [shape.logic.str+str(shape) for shape in self.shapes ] )
+        retval = _BLANK_.join( [shape.logic.as_str+str(shape) for shape in self.shapes ] )
         return(retval)
 
 
@@ -478,7 +479,9 @@ class EnhancedRegion( object ):
         self._classify_shapes()
         logic = self._determine_logic()
         if self._shapes:
-            map( lambda s,l: s._set_logic(l), self._shapes, logic)
+            for s,l in zip(self._shapes, logic):
+                s._set_logic(l)
+            #map( lambda s,l: s._set_logic(l), self._shapes, logic)
 
 
     @staticmethod
@@ -490,7 +493,7 @@ class EnhancedRegion( object ):
         """
         shape_name = create_string_buffer(100)
         region_lib.regShapeGetName(shape_ptr, shape_name, c_long(99))
-        return shape_name.value.lower()
+        return shape_name.value.lower().decode("ascii")
 
 
     @property
@@ -930,7 +933,7 @@ def SimpleGeometricShapes( name_as_string, xx, yy, radius, angle ):
     new_ptr = region_lib.regCreateEmptyRegion()
     vptr = c_void_p(new_ptr)
     region_lib.regAppendShape( vptr,
-                        c_char_p(name_as_string) ,
+                        c_char_p(name_as_string.encode("ascii")) ,
                         c_int(incINCLUDE.val), 
                         c_int(opNOOP.val),
                         wrap_vals(xx),
@@ -1053,13 +1056,13 @@ def region( filename ):
 
     retval = None
     try:
-        retval = cxcdm_lib.dmRegParse( c_char_p(str(filename) ))
+        retval = cxcdm_lib.dmRegParse( c_char_p(str(filename).encode("ascii") ))
         if not retval:
             raise IOError("try with a region()")
         return EnhancedRegion(retval)
     except IOError as E:
         try:
-            retval = cxcdm_lib.dmRegParse( c_char_p("region({})".format(str(filename)) ))
+            retval = cxcdm_lib.dmRegParse( c_char_p("region({})".format(str(filename)).encode('ascii') ))
             if not retval:
                 raise
             return EnhancedRegion(retval)
@@ -1083,12 +1086,12 @@ def dss( filename, colname="sky", component=1 ):
     
     retval = None
     
-    blk = cxcdm_lib.dmBlockOpen( None, c_char_p(filename) )
+    blk = cxcdm_lib.dmBlockOpen( None, c_char_p(filename.encode('ascii')) )
     if 0 == blk:
         raise IOError("Unable to open file '{}'".format(filename))
 
     cxcdm_lib.dmBlockSetSubspaceCpt( c_void_p(blk), c_long( component ) )
-    col = cxcdm_lib.dmSubspaceColOpen( c_void_p( blk), c_char_p(colname) )
+    col = cxcdm_lib.dmSubspaceColOpen( c_void_p( blk), c_char_p(colname.encode('ascii')) )
     ptr = cxcdm_lib.dmSubspaceColGetRegion( c_void_p(col) )     
 
     retval = EnhancedRegion( ptr )
@@ -1156,8 +1159,8 @@ def test():
     img = read_file("img.fits")
     wcs = img.get_transform("eqpos")
     print(c)
-    print(c.xform(wcs.apply))
-    print(c.xform(wcs.apply).xform(wcs.invert))
+    #print(c.xform(wcs.apply))
+    #print(c.xform(wcs.apply).xform(wcs.invert))
     
 
     

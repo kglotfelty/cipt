@@ -1,4 +1,5 @@
 # CIAO Image Processing Toolkit
+from __future__ import absolute_import, print_function, division
 
 
 #
@@ -8,10 +9,10 @@
 __all__ = [ "CIAOImage" ]
 
 
-from crateify import Crateify
-from smooth_kernels import *
-from enhanced_region import *
-from history_crate import *
+from .crateify import Crateify
+from .smooth_kernels import *
+from .enhanced_region import *
+from .history_crate import *
 from ciao_contrib.runtool import make_tool
 import numpy as np
 
@@ -862,9 +863,9 @@ class CIAOImage( HistoryIMAGECrate ):
         return self.asmd( other, "*", False)    
     def __rmul__(self, other):
         return self.asmd( other, "*", True)
-    def __div__(self,other):        
+    def __truediv__(self,other):        
         return self.asmd( other, "/", False)    
-    def __rdiv__(self, other):
+    def __rtruediv__(self, other):
         return self.asmd( other, "/", True)
 
     def __pow__( self, other ):
@@ -1121,7 +1122,7 @@ class CIAOImage( HistoryIMAGECrate ):
         
         import tempfile as tempfile 
         reg = tempfile.NamedTemporaryFile(delete=False ) 
-        reg.write( str(region) )
+        reg.write( str(region).encode("ascii") )
         reg.close()
 
         vfspec="[{}=region({})][opt full,null={}]".format(coord,reg.name, nullval )
@@ -1612,7 +1613,7 @@ class CIAOImage( HistoryIMAGECrate ):
             self.correlate( self.tophat(3) ).write("correlate.out", clobber=True)
             
             self.gaus(3).deconvolve( self ).write("deconvolve.out", clobber=True)
-            self.csmooth( 3,6,sclmax=10).write("csmooth.out", clobber=True)
+            #self.csmooth( 3,6,sclmax=10).write("csmooth.out", clobber=True)
             
         if True:
             self.gaus(3).contour("1").write( "contour_reg.out")

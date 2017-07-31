@@ -66,10 +66,10 @@ class CIAOImageKernel():
     
     >>> from smooth_kernels import *
     >>> g = Gaussian(3)
-    >>> print g
+    >>> print(g)
     lib:gaus(2,5,1.0,3.0,3.0)
     >>> g = Gaussian(3,7)
-    >>> print g
+    >>> print(g)
     lib:gaus(2,5,1.0,3.0,7.0)
     >>> t = Tophat(5,norm="area")
     >>> t.get_spec()
@@ -162,10 +162,10 @@ class CartesianKernel( CIAOImageKernel ):
     Example:
 
     >>> g = Gaussian(3)
-    >>> print g
+    >>> print(g)
     lib:gaus(2,5,1.0,3.0,3.0)
     >>> g = Gaussian(3,7)
-    >>> print g
+    >>> print(g)
     lib:gaus(2,5,1.0,3.0,7.0)
         
     """
@@ -204,7 +204,7 @@ class PolarKernel( CIAOImageKernel ):
     Example:
 
     >>> c = Cone(10)
-    >>> print c
+    >>> print(c)
     lib:cone(2,1.0,10.0)
     
     """
