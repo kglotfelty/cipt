@@ -867,6 +867,10 @@ class CIAOImage( HistoryIMAGECrate ):
         return self.asmd( other, "/", False)    
     def __rtruediv__(self, other):
         return self.asmd( other, "/", True)
+    def __div__(self,other):        
+        return self.asmd( other, "/", False)    
+    def __rdiv__(self, other):
+        return self.asmd( other, "/", True)
 
     def __pow__( self, other ):
         """        
