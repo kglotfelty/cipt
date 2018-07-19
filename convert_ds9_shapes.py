@@ -4,7 +4,7 @@
 #
 #
 
-from ciao_contrib.cipt.enhanced_region import *
+from region import *
 
 """
 Convert ds9 shapes to CIAO stacks of regions
@@ -98,9 +98,11 @@ def ds9_panda( xx, yy, start_angle, stop_angle, num_angle, inner, outer, num_rad
     panda(3874.5018,3550.4989,3.4160865e-09,359.9995,4,73.913415,147.82683,2)
        : panda( x, y, angle_min, angle_max, #angle, rmin, rmax, #rad)
     """
+    
+    
 
     if start_angle > stop_angle:
-        stop_angle = stop_angle + 360
+        stop_angle = stop_angle + 360.0
 
     da = (stop_angle-start_angle)/float(num_angle)
 
@@ -122,7 +124,7 @@ def ds9_epanda( xx, yy, start_angle, stop_angle, num_angle, mjr_inner, mnr_inner
        : epanda( x, y, angle_min, angle_max, #angle, rmin_major, rmin_minr, rmax_maj, rmax_min, #rad, angle)
     """
     if start_angle > stop_angle:
-        stop_angle = stop_angle + 360
+        stop_angle = stop_angle + 360.0
 
     da = (stop_angle-start_angle)/float(num_angle)
     dm = (mjr_outer-mjr_inner)/float(num_rad)
@@ -145,7 +147,7 @@ def ds9_bpanda( xx, yy, start_angle, stop_angle, num_angle, mjr_inner, mnr_inner
         : bpanda( x, y, angle_min, angle_max, #angle, rmin_major, rmin_minr, rmax_maj, rmax_min, #rad, angle)
     """
     if start_angle > stop_angle:
-        stop_angle = stop_angle + 360
+        stop_angle = stop_angle + 360.0
 
     da = (stop_angle-start_angle)/float(num_angle)
     dm = (mjr_outer-mjr_inner)/float(num_rad)
