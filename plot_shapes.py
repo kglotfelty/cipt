@@ -120,7 +120,7 @@ def plot_ellipse( x0, y0, r1, r2, rotang=None, style="" ):
     # that seems to have overlapping/duplicate data points.
 
     if None == rotang:
-        rotang = 0
+        rotang = 0.0
 
     nbins = 200
 
@@ -161,7 +161,7 @@ def plot_ellipse( x0, y0, r1, r2, rotang=None, style="" ):
     yp = np.append(yp, ym[1:])
     
     # Remove where Y value is outside of ellipse
-    xy = filter( lambda i: np.isfinite( i[1]), zip(xp,yp))
+    xy = [ ii for ii in zip(xp,yp) if np.isfinite(ii[1]) ]
     x = np.array([i[0] for i in xy])
     y = np.array([i[1] for i in xy])
 
@@ -336,16 +336,24 @@ def plot_region( regRegion, style="" ):
     
     
     """
-
     try:
         tst = len( regRegion )
-        tst = regRegion[0].shapes[0].shape
-         
+        tst = regRegion[0].shapes
     except:
         raise TypeError("Input parameter does not appear to be a valid region object")
+
  
     for rr in regRegion:
         ss = rr.shapes[0]
+
+        if hasattr(ss,"name"):
+            # Translate to CXCRegion
+            ss.shape = ss.name
+            ss.rad = ss.radii
+            ss.xx = ss.xpoints
+            ss.yy = ss.ypoints
+            ss.ang = ss.angles
+
         shape = ss.shape
         if 'annulus' == shape:
             plot_annulus( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], style=style )
