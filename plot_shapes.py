@@ -356,27 +356,27 @@ def plot_region( regRegion, style="" ):
 
         shape = ss.shape
         if 'annulus' == shape:
-            plot_annulus( ss.xpoints[0], ss.ypoints[0], ss.radius[0], ss.radius[1], style=style )
+            plot_annulus( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], style=style )
         elif 'box' == shape:
-            plot_box( ss.xpoints[0], ss.ypoints[0], ss.radius[0], ss.radius[1], style=style )
+            plot_box( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], style=style )
         elif 'circle' == shape:
-            plot_circle( ss.xpoints[0], ss.ypoints[0], ss.radius[0], style=style )
+            plot_circle( ss.xx[0], ss.yy[0], ss.rad[0], style=style )
         elif 'ellipse' == shape:
-            plot_ellipse( ss.xpoints[0], ss.ypoints[0], ss.radius[0], ss.radius[1], ss.angle[0], style=style )
+            plot_ellipse( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], ss.ang[0], style=style )
         elif 'field' == shape:
             pass # no fields please
         elif 'pie' == shape:
-            plot_pie( ss.xpoints[0], ss.ypoints[0], ss.radius[0], ss.radius[1], ss.angle[0], ss.angle[1], style=style )
+            plot_pie( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], ss.ang[0], ss.ang[1], style=style )
         elif 'point' == shape:
             pass # no points please
         elif 'polygon' == shape:
-            plot_polygon( ss.xpoints, ss.ypoints, style=style )
+            plot_polygon( ss.xx, ss.yy, style=style )
         elif 'rectangle' == shape:
-            plot_rectangle( ss.xpoints[0], ss.ypoints[0], ss.xpoints[1], ss.ypoints[1], style=style )
+            plot_rectangle( ss.xx[0], ss.yy[0], ss.xx[1], ss.yy[1], style=style )
         elif 'rotbox' == shape:
-            plot_box( ss.xpoints[0], ss.ypoints[0], ss.radius[0], ss.radius[1], ss.angle[0], style=style )
+            plot_box( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], ss.ang[0], style=style )
         elif 'sector' == shape:
-            plot_pie( ss.xpoints[0], ss.ypoints[0], 0, 99999, ss.angle[0], ss.angle[1], style=style )
+            plot_pie( ss.xx[0], ss.yy[0], 0, 99999, ss.ang[0], ss.ang[1], style=style )
         else:
             raise TypeError("Unknown shape type : {}".format(shape))
 
