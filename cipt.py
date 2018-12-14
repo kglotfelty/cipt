@@ -6,7 +6,7 @@ from __future__ import absolute_import, print_function, division
 # TODO:  NamedTempFiles() use os.environ["ASCDS_WORK_PATH"]
 #
 
-__all__ = [ "CIAOImage" ]
+__all__ = [ "CIAOImage", "test_image" ]
 
 
 from .crateify import Crateify
@@ -1617,7 +1617,7 @@ class CIAOImage( HistoryIMAGECrate ):
             self.correlate( self.tophat(3) ).write("correlate.out", clobber=True)
             
             self.gaus(3).deconvolve( self ).write("deconvolve.out", clobber=True)
-            #self.csmooth( 3,6,sclmax=10).write("csmooth.out", clobber=True)
+            self.csmooth( 3,6,sclmax=10).write("csmooth.out", clobber=True)
             
         if True:
             self.gaus(3).contour("1").write( "contour_reg.out")
@@ -1645,7 +1645,7 @@ def _run_cmd( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
     for k in kwargs:
         setattr( mycmd, k, kwargs[k] )
 
-    print(mycmd)
+    #print(mycmd)
     x = mycmd()
     if x : print(x)
 
@@ -1661,7 +1661,7 @@ def _get_reg( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
     for k in kwargs:
         setattr( mycmd, k, kwargs[k] )
 
-    print(mycmd)
+    #print(mycmd)
     x = mycmd()
     if x : print(x)
 
@@ -1677,7 +1677,7 @@ def _get_table( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
     for k in kwargs:
         setattr( mycmd, k, kwargs[k] )
 
-    print(mycmd)
+    #print(mycmd)
     x = mycmd()
     if x : print(x)
 
@@ -1702,11 +1702,9 @@ def serialize_temp_crate( data2save ):
 
         
 
-def test():    
+def test_image():    
     CIAOImage("img.fits")._test_()
     
-
-__all__.append("test")
 
 
 

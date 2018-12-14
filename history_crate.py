@@ -62,14 +62,14 @@ class HistoryIMAGECrate( IMAGECrate, HistoryCrate):
     """
     def __init__( self, filename, mode="r" ):        
         IMAGECrate.__init__(self,filename, mode=mode)
-        self.get_history( filename)
+        ###self.get_history( filename)
 
     def write( self, outfile, *args, **kwargs ):
         """
         Overide crates write to include history
         """
         IMAGECrate.write( self, outfile, *args, **kwargs )
-        self.put_history( outfile )
+        ###self.put_history( outfile )
 
 
 class HistoryTABLECrate( TABLECrate, HistoryCrate):
@@ -80,12 +80,12 @@ class HistoryTABLECrate( TABLECrate, HistoryCrate):
     """
     def __init__( self, filename, mode="r" ):        
         TABLECrate.__init__(self,filename, mode=mode)
-        self.get_history( filename)
+        ###self.get_history( filename)
 
     def write( self, outfile, *args, **kwargs ):
         """
         Overide crates write to include history
         """
         TABLECrate.write( self, outfile, *args, **kwargs )
-        self.put_history( outfile )
+        ###self.put_history( outfile )
 
