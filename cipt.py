@@ -1330,9 +1330,11 @@ class CIAOImage( HistoryIMAGECrate ):
     def _get_dmcoords_values(dmcoords):
         """
         """
+        from math import nan
         retval = {}
         for vv in [ 'chip_id', 'chipx', 'chipy', 'tdetx', 'tdety', 'detx', 'dety', 'x', 'y', 'logicalx', 'logicaly', 'ra', 'dec', 'theta', 'phi']:
-            retval[vv] = float(getattr( dmcoords, vv )  )
+            val = getattr( dmcoords, vv )
+            retval[vv] = float(val) if val is not None else nan
         return retval
             
 
