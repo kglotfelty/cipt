@@ -71,14 +71,15 @@ def simplify_polygon( xx, yy, delta ):
     return xp, yp
 
 
-def add_region( xx, yy, style, delta=0 ):
+def add_region( xx, yy, delta=0, **style ):
     """
     Wrapper around Chips' routine.  Will try with all data points,
     and if it fails then will try to simplify the polygon.
     """
 
-    import pychips as chips
+    ###import pychips as chips
     global _UseLines
+    from matplotlib import pylab as plt
     
     if delta > 4:
         raise RuntimeError("Problem plotting shape")
@@ -86,16 +87,18 @@ def add_region( xx, yy, style, delta=0 ):
     try:
         if _UseLines:
             # TODO: append first point onto end to close shape
-            chips.add_curve( xx, yy, style)
+            ###chips.add_curve( xx, yy, style)
+            plt.plot(xx,yy, **style)
         else:
-            chips.add_region(xx,yy, style)
+            ###chips.add_region(xx,yy, style)
+            plt.fill(xx,yy, **style)
     except Exception as e:
         delta = delta + 0.1
         xp, yp = simplify_polygon( xx, yy, delta=delta)
-        add_region( xp, yp, style, delta=delta )
+        add_region( xp, yp, delta=delta, **style )
     
 
-def plot_ellipse( x0, y0, r1, r2, rotang=None, style="" ):
+def plot_ellipse( x0, y0, r1, r2, rotang=None, **style ):
     """
     plot a rotated ellipse
     
@@ -172,10 +175,10 @@ def plot_ellipse( x0, y0, r1, r2, rotang=None, style="" ):
     ry = (-x * sina + y * cosa ) + y0
 
     # plot it
-    add_region(rx,ry, style)
+    add_region(rx,ry, **style)
 
 
-def plot_circle( x0, y0, r, style=""):
+def plot_circle( x0, y0, r, **style):
     """
     Plot a circular region
     
@@ -184,10 +187,10 @@ def plot_circle( x0, y0, r, style=""):
     >>> plot_circle( 4096, 4096, 500, { 'fill.style' : 'userfill1' })
 
     """
-    plot_ellipse( x0, y0, r, r, 0, style=style)
+    plot_ellipse( x0, y0, r, r, 0, **style)
 
 
-def plot_box( x0, y0, xl, yl=None, rotang=None, style="" ):
+def plot_box( x0, y0, xl, yl=None, rotang=None, **style ):
     """
     Plot a box region
     
@@ -219,10 +222,10 @@ def plot_box( x0, y0, xl, yl=None, rotang=None, style="" ):
     ry = (-dx * sina + dy * cosa ) + y0
 
     # plot it
-    add_region(rx,ry, style)
+    add_region(rx,ry, **style)
 
 
-def plot_rectangle( xl, yl, xh, yh, style=""):
+def plot_rectangle( xl, yl, xh, yh, **style):
     """
     Plot a rectangle
     
@@ -237,10 +240,10 @@ def plot_rectangle( xl, yl, xh, yh, style=""):
     y0 = (yh+yl)/2.0
     lx = (xh-xl)
     ly = (yh-yl)
-    plot_box( x0, y0, lx, ly, 0, style=style )
+    plot_box( x0, y0, lx, ly, 0, **style )
 
 
-def plot_polygon( xvals, yvals, style=""):
+def plot_polygon( xvals, yvals, **style):
     """
     Plot a polygon
     
@@ -261,10 +264,10 @@ def plot_polygon( xvals, yvals, style=""):
     >>> plot_polygon(x,y, 'fill.color=firebrick')
 
     """    
-    add_region(xvals, yvals, style)
+    add_region(xvals, yvals, **style)
 
     
-def plot_pie( x0, y0, rad_in, rad_out, ang_start, ang_stop , style="" ):
+def plot_pie( x0, y0, rad_in, rad_out, ang_start, ang_stop , **style ):
     """
     Plot a pie shaped region
     
@@ -298,11 +301,11 @@ def plot_pie( x0, y0, rad_in, rad_out, ang_start, ang_stop , style="" ):
     xx = np.append( x_in, x_out )+x0
     yy = np.append( y_in, y_out )+y0
     
-    add_region( xx, yy, style )
+    add_region( xx, yy, **style )
 
 
 
-def plot_annulus( x0, y0, rad_in, rad_out, style="" ):
+def plot_annulus( x0, y0, rad_in, rad_out, **style ):
     """
     Plot a pie shaped region
     
@@ -321,7 +324,7 @@ def plot_annulus( x0, y0, rad_in, rad_out, style="" ):
 
     """
     
-    plot_pie( x0, y0, rad_in, rad_out, 0.1, 359.9, style=style )
+    plot_pie( x0, y0, rad_in, rad_out, 0.1, 359.9, **style )
 
 
 def plot_point(x0, y0):
@@ -331,7 +334,7 @@ def plot_point(x0, y0):
 
 
 
-def plot_region( regRegion, style="" ):
+def plot_region( regRegion, **style ):
     """
     
     
@@ -356,27 +359,27 @@ def plot_region( regRegion, style="" ):
 
         shape = ss.shape
         if 'annulus' == shape:
-            plot_annulus( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], style=style )
+            plot_annulus( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], **style )
         elif 'box' == shape:
-            plot_box( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], style=style )
+            plot_box( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], **style )
         elif 'circle' == shape:
-            plot_circle( ss.xx[0], ss.yy[0], ss.rad[0], style=style )
+            plot_circle( ss.xx[0], ss.yy[0], ss.rad[0], **style )
         elif 'ellipse' == shape:
-            plot_ellipse( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], ss.ang[0], style=style )
+            plot_ellipse( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], ss.ang[0], **style )
         elif 'field' == shape:
             pass # no fields please
         elif 'pie' == shape:
-            plot_pie( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], ss.ang[0], ss.ang[1], style=style )
+            plot_pie( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], ss.ang[0], ss.ang[1], **style )
         elif 'point' == shape:
             pass # no points please
         elif 'polygon' == shape:
-            plot_polygon( ss.xx, ss.yy, style=style )
+            plot_polygon( ss.xx, ss.yy, **style )
         elif 'rectangle' == shape:
-            plot_rectangle( ss.xx[0], ss.yy[0], ss.xx[1], ss.yy[1], style=style )
+            plot_rectangle( ss.xx[0], ss.yy[0], ss.xx[1], ss.yy[1], **style )
         elif 'rotbox' == shape:
-            plot_box( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], ss.ang[0], style=style )
+            plot_box( ss.xx[0], ss.yy[0], ss.rad[0], ss.rad[1], ss.ang[0], **style )
         elif 'sector' == shape:
-            plot_pie( ss.xx[0], ss.yy[0], 0, 99999, ss.ang[0], ss.ang[1], style=style )
+            plot_pie( ss.xx[0], ss.yy[0], 0, 99999, ss.ang[0], ss.ang[1], **style )
         else:
             raise TypeError("Unknown shape type : {}".format(shape))
 
