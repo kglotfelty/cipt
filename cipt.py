@@ -11,12 +11,12 @@ __all__ = [ "CIAOImage", "test_image" ]
 
 from .crateify import Crateify
 from .smooth_kernels import *
-from .history_crate import *
 from ciao_contrib.runtool import make_tool
 import numpy as np
+from pycrates import IMAGECrate, TABLECrate
 
 
-class CIAOImage( HistoryIMAGECrate ):
+class CIAOImage( IMAGECrate ):
     """
     CIAO Image 
 
@@ -29,18 +29,9 @@ class CIAOImage( HistoryIMAGECrate ):
     >>> img=CIAOImage("img.fits")
     >>> img.smooth(Gaussian(3)).median(Annulus(20,22)).write("out.fits")
     
-    or if using Chips
-    
-    chips>  add_image( img.smooth(Cone(3)).filter(CXCRegion("ciao.reg")))
-
     All the currently implemented method return an image the
     same size as the original. New methods may change that.
-    
-    The CIAOImage extends the IMAGECrate to preserve the
-    history records so that when the crate is written
-    using the CIAOImage.write() method it will contain
-    all the processing commands used.
-    
+        
     There is support for simple arithmetic operations between
     CIAOImage objects of the same size.
     
@@ -245,7 +236,7 @@ class CIAOImage( HistoryIMAGECrate ):
         : median(CXCRegion) : find median(*) pixel value of those in 
                               masked region 
 
-        : mode(CXCRegion) : 3 * median() - 2*mean().  A measure of how 
+        : mode(CXCRegion) : 3*median() - 2*mean().  A measure of how 
                             skewed the pixel values are
 
         : nmode(CXCRegion) : Normalized mode, ie mode()/mean().
@@ -866,8 +857,7 @@ class CIAOImage( HistoryIMAGECrate ):
 
 
     def __init__( self, filename ):        
-        HistoryIMAGECrate.__init__(self,filename)
-        self.get_history( filename)
+        IMAGECrate.__init__(self,filename)
 
         for nl in ["min","max","mean","median","mode","mid","sigma","extreme",
             "locheq","kuwahara","unsharp","range","variance","nmode",
@@ -1654,7 +1644,7 @@ def _get_reg( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
     if x : print(x)
 
 
-@Crateify(HistoryTABLECrate)
+@Crateify(TABLECrate)
 def _get_table( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
 
     mycmd.punlearn()
@@ -1694,8 +1684,5 @@ def test_image():
     CIAOImage("img.fits")._test_()
     
 
-def __main__():
-    CIAOImage("img.fits")._test_()
-    
 
 

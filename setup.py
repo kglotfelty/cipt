@@ -21,7 +21,6 @@ setup( name='CIPT',
                     "all",
                     "cipt",
                     "crateify",
-                    "history_crate",
                     "smooth_kernels"]
         )
 """

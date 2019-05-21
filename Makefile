@@ -13,7 +13,7 @@ DDIR = $(DEV)/$(DEST)
 D2DIR = $(DEV)/$(DEST2)
 
 
-PYCODE = cipt.py crateify.py history_crate.py smooth_kernels.py __init__.py all.py
+PYCODE = cipt.py crateify.py smooth_kernels.py __init__.py all.py
 PLTCODE = plot_shapes.py
 
 
