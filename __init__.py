@@ -13,5 +13,4 @@ no user stuff).
 """
 
 from .cipt import CIAOImage
-from .enhanced_region import *
 

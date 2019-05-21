@@ -11,7 +11,6 @@ __all__ = [ "CIAOImage", "test_image" ]
 
 from .crateify import Crateify
 from .smooth_kernels import *
-from .enhanced_region import *
 from .history_crate import *
 from ciao_contrib.runtool import make_tool
 import numpy as np
@@ -32,7 +31,7 @@ class CIAOImage( HistoryIMAGECrate ):
     
     or if using Chips
     
-    chips>  add_image( img.smooth(Cone(3)).filter(Region("ciao.reg")))
+    chips>  add_image( img.smooth(Cone(3)).filter(CXCRegion("ciao.reg")))
 
     All the currently implemented method return an image the
     same size as the original. New methods may change that.
@@ -237,116 +236,100 @@ class CIAOImage( HistoryIMAGECrate ):
         3x3 pixel around the current pixel location are inspected and
         the miniumum value of those 9 pixel values is returned.
 
-        : min(EnhancedRegion) : find minimum pixel value of those in masked region 
+        : min(CXCRegion) : find minimum pixel value of those in masked region 
 
-        : max(EnhancedRegion) : find maximum pixel value of those in masked region 
+        : max(CXCRegion) : find maximum pixel value of those in masked region 
 
-        : mean(EnhancedRegion) : find mean pixel value of those in masked region 
+        : mean(CXCRegion) : find mean pixel value of those in masked region 
 
-        : median(EnhancedRegion) : find median(*) pixel value of those in 
+        : median(CXCRegion) : find median(*) pixel value of those in 
                               masked region 
 
-        : mode(EnhancedRegion) : 3 * median() - 2*mean().  A measure of how 
+        : mode(CXCRegion) : 3 * median() - 2*mean().  A measure of how 
                             skewed the pixel values are
 
-        : nmode(EnhancedRegion) : Normalized mode, ie mode()/mean().
+        : nmode(CXCRegion) : Normalized mode, ie mode()/mean().
         
-        : mid(EnhancedRegion) : The value mid way between the min and max
+        : mid(CXCRegion) : The value mid way between the min and max
 
-        : sigma(EnhancedRegion) : The standard deviation of the pixel values in 
+        : sigma(CXCRegion) : The standard deviation of the pixel values in 
                             the mask
 
-        : extreme(EnhancedRegion) : If the mean is closer to min value, use the 
+        : extreme(CXCRegion) : If the mean is closer to min value, use the 
                             min; otherwise use the max.
 
-        : locheq(EnhancedRegion) : local histogram equalization.  The center 
+        : locheq(CXCRegion) : local histogram equalization.  The center 
                             pixel (0,0) is scaled based on the distribution 
                             of pixels in the masked region.
 
-        : kuwahara(EnhancedRegiond) : An edge preserving smoothing.  The mask is 
+        : kuwahara(CXCRegiond) : An edge preserving smoothing.  The mask is 
                             divided into quadrants.  The mean value in
                             the quadrant with the smallest standard deviation
                             is used.
 
-        : unsharp(EnhancedRegion): center pixel minus the mean of the pixels in the mask.
+        : unsharp(CXCRegion): center pixel minus the mean of the pixels in the mask.
 
-        : range(EnhancedRegion) : The range of pixel values (max-min).
+        : range(CXCRegion) : The range of pixel values (max-min).
 
-        : variance(EnhancedRegion) : The variance of the pixel values compared to the
+        : variance(CXCRegion) : The variance of the pixel values compared to the
                             center pixel
 
-        : q25(EnhancedRegion) : 25% of the pixels in the mask are below this value.
+        : q25(CXCRegion) : 25% of the pixels in the mask are below this value.
 
-        : q33(EnhancedRegion) : 33% of the pixels in the mask are below this value.
+        : q33(CXCRegion) : 33% of the pixels in the mask are below this value.
 
-        : q67(EnhancedRegion) : 67% of the pixels in the mask are below this value.
+        : q67(CXCRegion) : 67% of the pixels in the mask are below this value.
 
-        : q75(EnhancedRegion) : 75% of the pixels in the mask are below this value.
+        : q75(CXCRegion) : 75% of the pixels in the mask are below this value.
 
-        : mcv(EnhancedRegion) : most common value.  A coarse histogram of the pixel
+        : mcv(CXCRegion) : most common value.  A coarse histogram of the pixel
                         values is created and the location of the peak is returned.
 
-        : sum(EnhancedRegion) : sum of the values in the mask
+        : sum(CXCRegion) : sum of the values in the mask
 
-        : rclip(EnhancedRegion) : If the center pixel value is less than the min 
+        : rclip(CXCRegion) : If the center pixel value is less than the min 
                         pixel in the mask, replace with the min value. If it is 
                         greater than the max, replace with the max. Otherwise, 
-                        use original value.  This should be used with EnhancedRegions
+                        use original value.  This should be used with CXCRegions
                         that exclude the center pixel (eg Annulus)
 
-        : peak(EnhancedRegion) : If the center pixel is the max value of the pixels
+        : peak(CXCRegion) : If the center pixel is the max value of the pixels
                         in the mask return it.  Otherwise return NaN.  Used
                         to identify local maximums.
 
-        : valley(EnhancedRegion) : If the center pixel is the min value of he pixels
+        : valley(CXCRegion) : If the center pixel is the min value of he pixels
                         in the mask return it.  Otherwise return NaN.  Used
                         to identify local minimum.
 
-        : count(EnhancedRegion) : Count the number of valid pixels in the mask.
+        : count(CXCRegion) : Count the number of valid pixels in the mask.
                         Different at the edge of image and at/around
                         any NaN values.
 
-        : olympic(EnhancedRegion) : Same as mean() except the lowest and
+        : olympic(CXCRegion) : Same as mean() except the lowest and
                         largest values are excluded.
 
-        : pmean(EnhancedRegion) : Poisson mean computed as (#Pixels with 
+        : pmean(CXCRegion) : Poisson mean computed as (#Pixels with 
                         value = 0 or 1 divided by #Pixels with value = 
                         0 ) minus 1. If #pixels_0 is 0 then use median.
                         Should only be used for integer images
 
-        : mu3(EnhancedRegion) : The 3rd moment of the pixel values
+        : mu3(CXCRegion) : The 3rd moment of the pixel values
 
-        : mu4(EnhancedRegion) : The 4th moment of the pixel values 
+        : mu4(CXCRegion) : The 4th moment of the pixel values 
  
-        : jitter(EnhancedRegion) : Randomly select one of the pixel values in the
+        : jitter(CXCRegion) : Randomly select one of the pixel values in the
                         mask
 
-        : rms(EnhancedRegion) : The root-mean-square
+        : rms(CXCRegion) : The root-mean-square
 
-        : nslope(EnhancedRegion) : The minimum difference between pixel values
+        : nslope(CXCRegion) : The minimum difference between pixel values
                         in the mask.
 
-        : sig3mean(EnhancedRegion) : The mean, after 5 iterations where data 
+        : sig3mean(CXCRegion) : The mean, after 5 iterations where data 
                         outside +/-3 sigma are excluded
 
-        : sig3median(EnhancedRegion) : The median after 5 iterations where data 
+        : sig3median(CXCRegion) : The median after 5 iterations where data 
                         outside +/-3 sigma are excluded
-
-        The EnahncedRegion's are any of the standard CIAO regions:
-        
-            annulus(x,y,r0,r1)
-            box(x,y,xlen,ylen)
-            circle(x,y,r)
-            ellipse(x,y,semi-major, semi-minor, angle)
-            field()
-            pie(x,y,inner_radius, outer_radius, start_angle, stop_angle)
-            point(x,y)
-            polygon( x1, y1, x2, y2, x3,y3,...)
-            polygon_vec( xvals, yvals )
-            rectangle( lower_left_x, lower_left_y, upper_right_x, upper_right_y)
-            rotbox( x,y,xlen, ylen, angle)
-            sector( x, y, start_angle, stop_angle)
-            region(filename)
 
         For the non-linear filters, the regions should be defined around 
         (0,0); they are shifted to the center of each pixel to create the
@@ -1495,6 +1478,8 @@ class CIAOImage( HistoryIMAGECrate ):
     
     def _test_(self):
 
+        from region import field, circle, annulus, box, ellipse, point, pie, sector, rectangle, polygon
+
         if True:
             for mth in ["min","max","mean","median","mode","mid","sigma","extreme",
                 "locheq","kuwahara","unsharp","range","variance","nmode",
@@ -1561,7 +1546,7 @@ class CIAOImage( HistoryIMAGECrate ):
             self.filter(pacmac, coord="(#1,#2)").write("pacmac.out",clobber=True)
 
             el1 = ellipse( 300,300, 50, 200, 45)
-            el2 = el1.tweak(rotate=90)
+            el2 = el1.edit(rotate=90)
             elxor = el1-el2 + el2-el1
             eland = el1 * el2
             self.filter(elxor, coord="(#1,#2)").write("xor.out", clobber=True)
@@ -1651,8 +1636,9 @@ def _run_cmd( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
     x = mycmd()
     if x : print(x)
 
+from region import CXCRegion
 
-@Crateify(region)
+@Crateify(CXCRegion)
 def _get_reg( mycmd, infile, outfile, vfspec="", inp="infile", **kwargs):
 
     mycmd.punlearn()
@@ -1708,6 +1694,8 @@ def test_image():
     CIAOImage("img.fits")._test_()
     
 
-
+def __main__():
+    CIAOImage("img.fits")._test_()
+    
 
 
