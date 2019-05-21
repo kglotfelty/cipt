@@ -20,7 +20,6 @@ setup( name='CIPT',
         py_modules=["__init__",
                     "all",
                     "cipt",
-                    "convert_ds9_shapes",
                     "crateify",
                     "history_crate",
                     "smooth_kernels"]
