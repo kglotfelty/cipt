@@ -21,7 +21,8 @@ setup( name='CIPT',
                     "all",
                     "cipt",
                     "crateify",
-                    "smooth_kernels"]
+                    "smooth_kernels",
+                    "plot_shapes"]
         )
 """
 plot_shapes.py
