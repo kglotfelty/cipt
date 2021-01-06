@@ -14,13 +14,8 @@ setup( name='CIPT',
         description='CIAO Image Processing Toolkit',
         author='Kenny Glotfelty',
         author_email='glotfeltyk@si.edu',
-        url='https://github.com/kglotfelty/cipy/',
-        py_modules=["__init__",
-                    "all",
-                    "cipt",
-                    "crateify",
-                    "smooth_kernels",
-                    "plot_shapes"]
+        url='https://github.com/kglotfelty/cipt/',
+        packages=["ciao_contrib/cipt/"]
         )
 """
 plot_shapes.py
