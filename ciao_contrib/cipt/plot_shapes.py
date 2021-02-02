@@ -10,13 +10,38 @@ CIAO regions stored in Physical coordinates.
 
 """
 
-__all__ = [ "plot_ellipse", "plot_box", "plot_circle", "plot_rectangle", "plot_polygon", 
-            "plot_annulus", "plot_pie", "plot_region", "set_plot_with_lines"] 
+__all__ = [ "plot_ellipse", "plot_box", "plot_circle", "plot_rectangle", 
+            "plot_polygon", 
+            "plot_annulus", "plot_pie", "plot_region", 
+            "set_plot_with_lines"] 
 
 
 import numpy as np
 
-_UseLines = False
+
+class MatplotlibPlotEngine():
+    _UseLines = False
+    
+    def __init__(self):
+        import matplotlib.pylab as plt
+        self.plt = plt
+    
+    def begin_plot(self):
+        fig,ax = self.plt.subplots()
+        ax.set_aspect(1)
+        
+    def plot(self, xx, yy, **style):
+        if self._UseLines:
+            # TODO?: append first point onto end to close shape
+            self.plt.plot(xx,yy, **style)
+        else:
+            self.plt.fill(xx,yy, **style)
+
+    def end_plot(self):
+        self.plt.show()
+
+_Plotter = MatplotlibPlotEngine()
+
 
 def set_plot_with_lines( use_lines ):
     """
@@ -25,8 +50,7 @@ def set_plot_with_lines( use_lines ):
     use_lines = True  -> will use lines
     use_lines = False -> will use regions
     """
-    global _UseLines
-    _UseLines = use_lines
+    _Plotter._UseLines = True
 
 
 def simplify_polygon( xx, yy, delta ):
@@ -73,25 +97,18 @@ def simplify_polygon( xx, yy, delta ):
 
 def add_region( xx, yy, delta=0, **style ):
     """
-    Wrapper around Chips' routine.  Will try with all data points,
-    and if it fails then will try to simplify the polygon.
+    Actually draw the region.  All regions are drawn as polygons.
+    Uses the _Plotter object (wrapper around matplotlib).
+    
+    If the plot fails, then it simplifies the polygon
+    until it either works or max delta is met.
     """
-
-    ###import pychips as chips
-    global _UseLines
-    from matplotlib import pylab as plt
     
     if delta > 4:
         raise RuntimeError("Problem plotting shape")
 
     try:
-        if _UseLines:
-            # TODO: append first point onto end to close shape
-            ###chips.add_curve( xx, yy, style)
-            plt.plot(xx,yy, **style)
-        else:
-            ###chips.add_region(xx,yy, style)
-            plt.fill(xx,yy, **style)
+        _Plotter.plot(xx,yy, **style)
     except Exception as e:
         delta = delta + 0.1
         xp, yp = simplify_polygon( xx, yy, delta=delta)
@@ -336,8 +353,9 @@ def plot_point(x0, y0):
 
 def plot_region( regRegion, **style ):
     """
+    Loop over each shape in a CXC region and plot it.
     
-    
+    Note: no distinction between include and exclude shapes.    
     """
     try:
         tst = len( regRegion )
@@ -345,6 +363,7 @@ def plot_region( regRegion, **style ):
     except:
         raise TypeError("Input parameter does not appear to be a valid region object")
 
+    _Plotter.begin_plot()
  
     for rr in regRegion:
         ss = rr.shapes[0]
@@ -382,4 +401,6 @@ def plot_region( regRegion, **style ):
             plot_pie( ss.xx[0], ss.yy[0], 0, 99999, ss.ang[0], ss.ang[1], **style )
         else:
             raise TypeError("Unknown shape type : {}".format(shape))
+
+    _Plotter.end_plot()
 
