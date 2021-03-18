@@ -872,7 +872,8 @@ class CIAOImage( IMAGECrate ):
 
         for scl in  ["cos", "sin", "tan", "acos", "asin", "atan", "cosh", 
             "sinh", "tanh", "exp", "log", "ln", "sqrt", "fabs",
-            "asinh", "acosh", "atanh"]:
+            "asinh", "acosh", "atanh", "floor", "ceil", 
+            "erf", "erfc", "gamma", "lgamma"]:
                 setattr(self, scl, self._Scale( self, scl ))
 
         for cst in ["byte", "short", "long", "ushort", "ulong", "float", "double", "int" ]:
@@ -1482,7 +1483,8 @@ class CIAOImage( IMAGECrate ):
             for mth in ["cos", "sin", "tan", "acos", "asin", "atan", "cosh", 
                 "sinh", "tanh", "exp", "log", "ln", "sqrt", "fabs",
                 "asinh", "acosh", "atanh",
-                "byte", "short", "long", "ushort", "ulong", "float", "double", "int" ]:
+                "byte", "short", "long", "ushort", "ulong", "float", "double", "int",
+                "floor","ceil", "erf", "erfc", "gamma", "lgamma" ]:
                     getattr( self, mth)().write(mth+".out", clobber=True )
                 
         if True:
